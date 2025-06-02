@@ -1,0 +1,28 @@
+FROM node:18
+
+WORKDIR /app
+
+# Accept the NODE_OPTIONS argument passed from docker-compose.yml
+ARG NODE_OPTIONS
+
+# Make it an environment variable available during the build (and subsequent runs)
+ENV NODE_OPTIONS ${NODE_OPTIONS}
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy environment variables
+COPY .env.production .env
+
+# Copy source code
+COPY . .
+
+# Build the Next.js project
+RUN npm run build
+
+# Expose the port
+EXPOSE 3000
+
+# Run the production build
+CMD ["npm", "run", "start"]

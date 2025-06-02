@@ -1,0 +1,23 @@
+# Use official Node.js LTS version
+FROM node:18
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy .env file
+COPY .env.production .env
+
+# Copy the rest of the code
+COPY . .
+
+# Build the project
+RUN npm run build
+
+# Expose the port your Express server uses
+EXPOSE 8080
+
+# Start the server
+CMD ["npm", "run", "start"]

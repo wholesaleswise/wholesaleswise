@@ -1,0 +1,44 @@
+version: "3.8" # Using version 3.8
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Pass an argument to the Dockerfile to increase Node.js memory during the build
+        NODE_OPTIONS: "--max-old-space-size=4096" # Allocate 4GB for Node.js heap during build
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    ### Crucial Fix: Allocate more memory to the Docker container itself ###
+    # mem_limit: 4g # Allocate 4 gigabytes of RAM for the frontend container
+    # You can try 6g or 8g if 4g is still not enough, depending on your machine's resources.
+    environment:
+      # Ensure your frontend knows the backend URL (as discussed for "fetch failed")
+      NEXT_PUBLIC_API_URL: http://backend:8080
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  app-network:
+    # driver: bridge # Optional, usually implicit
