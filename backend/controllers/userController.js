@@ -4,9 +4,10 @@ import sendEmailVerificationOTP from "../utils/sendEmailVerificationOTP.js";
 import EmailVerificationModel from "../models/EmailVerification.js";
 import generateTokens from "../utils/generateTokens.js";
 import jwt from "jsonwebtoken";
-import transporter from "../config/emailConfig.js";
+// import transporter from "../config/emailConfig.js";
 import pkg from "google-libphonenumber";
 import setTokensCookies from "../utils/setTokensCookies.js";
+import sgMail from "../config/emailConfig.js";
 const { PhoneNumberUtil } = pkg;
 const phoneUtil = PhoneNumberUtil.getInstance();
 
@@ -303,18 +304,30 @@ class UserController {
       // Reset Link
       const resetLink = `${process.env.FRONTEND_HOST}/account/reset-password-confirm/${user._id}/${token}`;
 
-      // Send password reset email
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
-        to: user.email,
-        subject: "Password Reset Link",
-        html: `<p>Hello ${user.name},</p><p>Please <a href="${resetLink}">click here</a> to reset your password.</p>`,
-      });
-      // Send success response
-      res.status(200).json({
-        status: "success",
-        message: "Password reset email sent. Please check your email.",
-      });
+      try {
+        const mail = await sgMail.send({
+          to: user.email,
+          from: process.env.EMAIL_FROM,
+          subject: "Password Reset Link",
+          html: `<p>Hello ${user.name},</p><p>Please <a href="${resetLink}">click here</a> to reset your password.</p>`,
+        });
+        // Send success response
+        console.log(mail);
+        res.status(200).json({
+          status: "success",
+          message: "Password reset email sent. Please check your email.",
+        });
+      } catch (emailError) {
+        console.error(
+          "SendGrid failed:",
+          emailError.response?.body || emailError.message
+        );
+        return res.status(500).json({
+          status: "failed",
+          message:
+            "Failed to send password reset email. Please try again later.",
+        });
+      }
     } catch (error) {
       console.error(error);
       res.status(500).json({

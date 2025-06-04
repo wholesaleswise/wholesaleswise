@@ -1,15 +1,13 @@
 import dotenv from "dotenv";
-dotenv.config();
-import nodemailer from "nodemailer";
+dotenv.config(); // ✅ Load env variables from .env file
 
-let transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER, // Admin Gmail ID
-    pass: process.env.EMAIL_PASS, // Admin Gmail Password
-  },
-});
+import sgMail from "@sendgrid/mail";
 
-export default transporter;
+// ✅ Check if API key exists before setting
+if (!process.env.SENDGRID_API_KEY) {
+  console.error("❌ SENDGRID_API_KEY is not defined in environment variables.");
+} else {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY); // ✅ Set the SendGrid API key
+}
+
+export default sgMail;
