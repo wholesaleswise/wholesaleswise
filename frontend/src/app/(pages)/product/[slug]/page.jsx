@@ -36,6 +36,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import CategroyWiseProductDisplay from "@/components/CategroyWiseProductDisplay";
 
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
@@ -624,7 +625,7 @@ const SingleProduct = ({ slug }) => {
         {/* Recommended Products */}
         <div className="pb-12 border-t">
           {productData?.category?.categoryName && (
-            <CategroyProduct
+            <CategroyWiseProductDisplay
               category={productData?.category?.categoryName}
               heading={"Recommended Product :"}
             />

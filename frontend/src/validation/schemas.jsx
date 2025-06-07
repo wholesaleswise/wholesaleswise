@@ -110,6 +110,10 @@ export const productSchema = Yup.object({
     .positive("Stock Quantity must be a positive number")
     .min(0, "Stock Quantity cannot be negative"),
   productImageUrls: Yup.array().min(1, "At least One image is required"),
+  keywords: Yup.string()
+    .required("Keywords are required")
+    .max(200, "Keep keywords under 200 characters"),
+
   discount: Yup.number()
     .default(0)
     .min(0, "Discount cannot be negative")

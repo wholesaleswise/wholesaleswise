@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   FaSearch,
-  FaPlus,
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
@@ -169,7 +168,7 @@ const ProductList = () => {
             <Input
               type="text"
               placeholder="Search Products..."
-              className="pr-20 w-full border border-color"
+              className="pr-20 w-full border border-gray-800"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -195,9 +194,10 @@ const ProductList = () => {
         <div className="w-[90%] mx-auto flex flex-col justify-center ">
           <Table className="min-w-max " data-aos="fade-right">
             <TableHeader>
-              <TableRow className="uppercase text-sm bg-primary hover:bg-hover">
+              <TableRow className="uppercase text-sm bg-[#003c7a] hover:bg-[#255394] ">
                 <TableHead className="text-white">Image</TableHead>
                 <TableHead className="text-white">Product Name</TableHead>
+                <TableHead className="text-white">SEO Keywords</TableHead>
                 <TableHead className="text-white">Stock Keeping Unit</TableHead>
                 <TableHead className="text-white">Category</TableHead>
                 <TableHead className="text-white">Price</TableHead>
@@ -209,7 +209,7 @@ const ProductList = () => {
             </TableHeader>
             <TableBody className="capitalize ">
               {currentProducts.map((product) => (
-                <TableRow key={product._id} className=" hover:bg-secondary">
+                <TableRow key={product._id} className=" hover:bg-slate-200">
                   <TableCell>
                     <div className="flex gap-1">
                       {product?.productImageUrls?.map((img, index) => (
@@ -222,9 +222,14 @@ const ProductList = () => {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-sm">{product?.productName}</TableCell>
+                  <TableCell className="max-w-sm">
+                    {product?.productName}
+                  </TableCell>
+                  <TableCell className="max-w-sm">
+                    {product?.keywords}
+                  </TableCell>
                   <TableCell>{product?.SKU}</TableCell>
-                  <TableCell >{product?.category?.categoryName}</TableCell>
+                  <TableCell>{product?.category?.categoryName}</TableCell>
                   <TableCell>AU$ {product?.productPrice}</TableCell>
                   <TableCell>{product?.discount}%</TableCell>
                   <TableCell>{product?.productTotalStockQty}</TableCell>
@@ -244,7 +249,7 @@ const ProductList = () => {
                       </button>
                       <button
                         onClick={() => handleDelete(product?._id)}
-                        className="bg-red flex items-center gap-1 text-white px-2 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+                        className="bg-red-500 flex items-center gap-1 text-white px-2 py-1 rounded hover:bg-red-600 disabled:opacity-50"
                         disabled={isDeleting}
                       >
                         <Trash2 style={{ width: "15px", height: "15px" }} />

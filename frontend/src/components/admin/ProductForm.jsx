@@ -143,6 +143,7 @@ export default function ProductForm({ slug }) {
       discount: 0,
       productImageUrls: [],
       productImages: [],
+      keywords: "",
     },
     validationSchema: productSchema,
     onSubmit: async (productData) => {
@@ -159,7 +160,7 @@ export default function ProductForm({ slug }) {
         formData.append("productPrice", productData.productPrice);
         formData.append("category", productData.category);
         formData.append("discount", productData.discount);
-
+        formData.append("keywords", productData.keywords);
         formData.append("productImageDBUrls", [...digitalOceanUrls]);
         console.log(digitalOceanUrls);
         formData.append(
@@ -238,7 +239,7 @@ export default function ProductForm({ slug }) {
       <form
         onSubmit={handleSubmit}
         encType="multipart/form-data"
-        className="space-y-6 p-4 md:p-6 my-2 w-[95%]  mx-auto md:max-w-3xl lg:w-[80%] lg:mx-auto bg-white shadow-lg  hover:shadow-[#f5d0a9] border border-card rounded-sm"
+        className="space-y-6 p-4 md:p-6 my-2 w-[95%]  mx-auto md:max-w-3xl lg:w-[80%] lg:mx-auto bg-white rounded-lg shadow-lg border border-gray-200"
       >
         <h2 className="text-lg lg:text-xl font-bold mb-4 text-primary text-center ">
           {productslug ? "Update Product" : "Add New Product"}
@@ -310,6 +311,25 @@ export default function ProductForm({ slug }) {
                 <div className={`${error}`}>{errors.SKU}</div>
               )}
             </div>
+            <div>
+              <Label
+                htmlFor="keywords"
+                className="flex mb-1 gap-2 font-semibold"
+              >
+                Keywords <p className="text-red-500">*</p>
+              </Label>
+              <Input
+                name="keywords"
+                type="text"
+                placeholder="Enter SEO keywords (comma-separated)"
+                value={values.keywords}
+                onChange={handleChange}
+                className="w-full p-3 border text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.keywords && touched.keywords && (
+                <div className={`${error}`}>{errors.keywords}</div>
+              )}
+            </div>
 
             <div>
               <Label
@@ -334,7 +354,12 @@ export default function ProductForm({ slug }) {
               )}
             </div>
             <div>
-              <Label htmlFor="discount">Discount (%)</Label>
+              <Label
+                htmlFor="discount"
+                className="flex mb-1 gap-2 font-semibold"
+              >
+                Discount (%)
+              </Label>
               <Input
                 name="discount"
                 type="text"

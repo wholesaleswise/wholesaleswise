@@ -3,6 +3,7 @@ import {
   getWebsiteInfo,
 } from "@/lib/services/serverSideAPICall";
 import SingleProduct from "./page";
+
 export async function generateMetadata({ params }) {
   const { slug } = params;
 
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }) {
       return {
         title: `Product Not Found - ${websiteInfo?.websiteName} `,
         description: "The requested product could not be found.",
+        keywords: "Product Not Found, Error, Tech Electronics",
       };
     }
 
@@ -25,11 +27,17 @@ export async function generateMetadata({ params }) {
         }${rawImage}`;
 
     const title = `${product.productName} - ${websiteInfo?.websiteName}`;
-    const description = `Explore top-quality ${product.productName} at Tech Electronics.`;
+
+    // Use keywords from the database
+    const keywords = product?.keywords;
+
+    // Description with product name
+    const description = `Explore top-quality ${product.productName} at ${websiteInfo?.websiteName}. Keywords: ${keywords}`;
 
     return {
       title,
       description,
+      keywords,
       openGraph: {
         title,
         description,
@@ -50,12 +58,20 @@ export async function generateMetadata({ params }) {
         description,
         images: absoluteImage ? [absoluteImage] : [],
       },
+
+      head: [
+        {
+          name: "keywords",
+          content: keywords,
+        },
+      ],
     };
   } catch (error) {
     console.error("Metadata generation error:", error);
     return {
       title: "Error - Tech Electronics",
       description: "An error occurred while loading the product metadata.",
+      keywords: "Error, Tech Electronics, Product Not Found",
     };
   }
 }

@@ -17,6 +17,7 @@ class ProductController {
         category,
         productTotalStockQty,
         discount,
+        keywords,
       } = req.body;
 
       const productImages = req.files;
@@ -24,20 +25,22 @@ class ProductController {
       // Validation
       switch (true) {
         case !productName:
-          return res.status(500).send({ message: "Product Name is required" });
+          return res.status(400).send({ message: "Product Name is required" });
         case !productDescription:
           return res
-            .status(500)
+            .status(400)
             .send({ message: "Product Description is required" });
         case !SKU:
-          return res.status(500).send({ message: "SKU is required" });
+          return res.status(400).send({ message: "SKU is required" });
         case !productPrice:
-          return res.status(500).send({ message: "Price is required" });
+          return res.status(400).send({ message: "Price is required" });
         case !category:
-          return res.status(500).send({ message: "Category is required" });
+          return res.status(400).send({ message: "Category is required" });
+        case !keywords:
+          return res.status(400).send({ message: "keywords is required" });
         case !productTotalStockQty:
           return res
-            .status(500)
+            .status(400)
             .send({ message: "Total stock quantity is required" });
       }
 
@@ -94,13 +97,13 @@ class ProductController {
             `https://${process.env.SPACES_BUCKET_NAME}.${process.env.SPACES_REGION}.digitaloceanspaces.com/products/${timestamp}_${FileName}`
           );
         } catch (error) {
-          return res.status(400).send({
+          return res.status(500).send({
             message: error.message || "Image upload failed",
           });
         }
       }
       if (imageUrls.length === 0) {
-        return res.status(400).send({
+        return res.status(500).send({
           message: "Image upload failed",
         });
       }
@@ -114,6 +117,7 @@ class ProductController {
         productTotalStockQty,
         productImageUrls: imageUrls,
         discount,
+        keywords,
         slug: slugify(trimmedProductName),
       });
 
@@ -125,6 +129,7 @@ class ProductController {
         product,
       });
     } catch (error) {
+      console.log(error);
       res.status(500).send({
         success: false,
         message: error.message || "Error in creating product",
@@ -144,6 +149,7 @@ class ProductController {
         products,
       });
     } catch (error) {
+      console.log(error);
       res.status(500).send({
         success: false,
         message: error.message || "Error in fetching products",
@@ -156,7 +162,7 @@ class ProductController {
   static getSingleProduct = async (req, res) => {
     try {
       const { slug } = req.params;
-     
+      console.log(slug);
       const product = await ProductModel.findOne({ slug: slug })
         .populate("category")
         .populate({
@@ -179,6 +185,7 @@ class ProductController {
         product,
       });
     } catch (error) {
+      console.log(error);
       res.status(500).send({
         success: false,
         message: error.message || "Error while getting product",
@@ -201,6 +208,7 @@ class ProductController {
         productTotalStockQty,
         discount,
         productImageDBUrls,
+        keywords,
       } = req.body;
 
       const productImages = req.files;
@@ -221,6 +229,8 @@ class ProductController {
         return res
           .status(400)
           .send({ message: "Total stock quantity is required" });
+      if (!keywords)
+        return res.status(400).send({ message: "keywords is required" });
 
       if (discount < 0 || discount > 100) {
         return res
@@ -296,16 +306,16 @@ class ProductController {
       if (productImageDBUrls.length === 0) {
         result = productImageDBUrls;
       } else {
-        result = productImageDBUrls.split(",");
+        result = productImageDBUrls.split(/,(?=https:\/\/)/);
       }
 
       const newImageUrlstosave = [...result, ...imageUrls];
-     
+      console.log(newImageUrlstosave);
       const updatedImageUrls = oldImage
         ? [...newImageUrlstosave]
         : [...imageUrls];
 
-      
+      console.log(updatedImageUrls);
 
       const updateData = {
         productName,
@@ -316,6 +326,7 @@ class ProductController {
         productTotalStockQty,
         productImageUrls: updatedImageUrls,
         discount,
+        keywords,
       };
 
       // Update the product in the database
@@ -368,7 +379,7 @@ class ProductController {
 
       // Delete the product from the database
       const result = await ProductModel.findByIdAndDelete(id);
-   
+      console.log(result);
 
       res.status(200).send({
         success: true,
@@ -386,7 +397,7 @@ class ProductController {
   static createProductReview = async (req, res) => {
     const { rating, reviewContent, reviewerName, userId } = req.body;
     const { slug } = req.params;
-   
+    console.log(rating, slug, reviewContent, reviewerName, userId);
 
     try {
       // Validation
@@ -443,7 +454,7 @@ class ProductController {
         0
       );
       const avgRating = numReviews > 0 ? Math.floor(ratingSum / numReviews) : 0;
-
+      console.log(avgRating);
 
       // Update the product with the new average rating and number of reviews
       const updatedProduct = await ProductModel.findOneAndUpdate(
@@ -499,6 +510,8 @@ class ProductController {
     const { slug, reviewId } = req.params; // Assuming reviewId is passed as a parameter
     // Assuming userId is passed from the authenticated user's session
 
+    console.log(rating, slug, reviewContent, reviewId, userId);
+
     try {
       // Validation
       if (!rating || !reviewContent) {
@@ -550,7 +563,7 @@ class ProductController {
         0
       );
       const avgRating = numReviews > 0 ? Math.floor(ratingSum / numReviews) : 0;
-    
+      console.log(avgRating);
 
       // Update the product with the new average rating and number of reviews
       const updatedProduct = await ProductModel.findOneAndUpdate(
@@ -604,7 +617,7 @@ class ProductController {
   static deleteProductReview = async (req, res) => {
     const userId = req.user._id;
     const { slug, reviewId } = req.params;
-   
+    console.log(slug, reviewId, userId);
 
     try {
       // Check if the product exists

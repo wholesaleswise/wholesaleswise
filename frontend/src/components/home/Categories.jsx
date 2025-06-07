@@ -40,7 +40,7 @@ const Categories = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 ">
+    <div className="container mx-auto px-4 pt-4">
       <div className="overflow-scroll scrollbar-none">
         {isLoading ? (
           <div className="flex -mx-2 mt-4 sm:mt-8">

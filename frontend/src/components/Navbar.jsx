@@ -257,7 +257,7 @@ const Navbar = () => {
       <div className="fixed top-0 left-0 w-full z-40 bg-orange-50  shadow-sm ">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <div>
             <Logo className="h-10 w-auto object-cover" isShow={true} />
           </div>
 

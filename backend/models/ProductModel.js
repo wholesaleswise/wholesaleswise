@@ -23,6 +23,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    keywords: {
+      type: String,
+      required: true,
+    },
     productPrice: {
       type: Number,
       required: true,

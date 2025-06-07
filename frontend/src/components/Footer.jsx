@@ -74,7 +74,7 @@ const Footer = () => {
             <div className="container mx-auto">
               <div className=" py-10 flex flex-col md:flex-row md:justify-around gap-10 ">
                 <div>
-                  {websiteInfo?.logoImage && (
+                  {!websiteInfo?.websiteName && websiteInfo?.logoImage && (
                     <Link href="/" className="flex mb-4 h-12 w-12">
                       <img src={websiteInfo?.logoImage || null} alt={" Logo"} />
                     </Link>
