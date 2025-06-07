@@ -445,9 +445,9 @@ const SingleProduct = ({ slug }) => {
               <div className="flex items-center gap-3 my-2">
                 <Link
                   href={"/products"}
-                  className="h-9 px-4 py-2 border-2 rounded-md  w-28 items-center flex justify-center font-semibold border-input bg-gray-200 shadow-sm hover:bg-gray-300 hover:text-accent-foreground"
+                  className="h-9 px-4 py-2 border border-card rounded-md bg-secondary hover:bg-[#fbcc97]   items-center flex justify-center font-semibold"
                 >
-                  Buy
+                  Shop Now
                 </Link>
                 <Button
                   type="button"
@@ -620,7 +620,6 @@ const SingleProduct = ({ slug }) => {
             </form>
           </Modal>
         )}
-        {/* Modal for Add/Edit Review */}
 
         {/* Recommended Products */}
         <div className="pb-12 border-t">

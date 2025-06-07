@@ -161,6 +161,16 @@ const Footer = () => {
                       );
                     })}
                   </div>
+                  {websiteInfo?.logoImage && (
+                    <div className=" pt-6">
+                      <Link href="/" className="flex mb-4 h-16 w-16 ">
+                        <img
+                          src={websiteInfo?.logoImage || null}
+                          alt={" Logo"}
+                        />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

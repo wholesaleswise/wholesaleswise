@@ -172,7 +172,6 @@ export const bannervalidationSchema = Yup.object({
         return imageLoaded;
       }
     ),
-
   productLink: Yup.string()
     .url("Invalid URL")
     .required("Product Link URL is required"),
@@ -180,7 +179,6 @@ export const bannervalidationSchema = Yup.object({
 
 export const checkoutValidationSchema = Yup.object({
   fullName: Yup.string().required("Name is required"),
-
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
@@ -193,7 +191,6 @@ export const checkoutValidationSchema = Yup.object({
   state: Yup.string().required("State is required"),
   zip: Yup.string().required("Zip code is required"),
   address: Yup.object().required("Shipping address is required"),
-
   paymentMethod: Yup.string().required("Payment method is required"),
   cart: Yup.array(),
 });
