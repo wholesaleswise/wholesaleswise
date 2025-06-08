@@ -23,7 +23,7 @@ const MyOrder = () => {
     );
   }
   return (
-    <div className="h-[calc(100vh-190px)] overflow-y-scroll">
+    <div className="overflow-y-scroll">
       <UserOrderCom data={data} />
     </div>
   );

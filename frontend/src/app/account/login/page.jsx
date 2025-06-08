@@ -39,6 +39,7 @@ const Login = () => {
         if (response?.data?.user || isSuccess) {
           toast.success(`${response?.data?.message}!!!`);
           action.resetForm();
+          const userRole = response?.data?.user?.roles;
           if (userRole === "admin") {
             router.push("/admin/dashboard");
           } else {

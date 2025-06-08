@@ -653,7 +653,8 @@ const Checkout = () => {
                             }
                           );
                           const orderData = await response.json();
-                          toast.success(`${response?.message}`);
+
+                          toast.success(`${orderData.message}`);
                           if (userRole === "admin") {
                             router.push("/admin/my-order");
                           } else if (userRole === "user") {

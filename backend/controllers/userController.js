@@ -386,7 +386,7 @@ class UserController {
       if (error.name === "TokenExpiredError") {
         return res.status(400).json({
           status: "failed",
-          message: "Token expired. Please request a new password reset link.",
+          message: "Link expired. Please request a new password reset link.",
         });
       }
       return res.status(500).json({
