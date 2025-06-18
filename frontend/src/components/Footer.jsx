@@ -99,7 +99,12 @@ const Footer = () => {
                     </li>
                     <li className="flex items-center">
                       <PhoneCall size={18} className="mr-2 text-light " />
-                      <span>{websiteInfo?.supportNumber}</span>
+                      <a
+                        href={`tel:${websiteInfo.supportNumber}`}
+                        className=" hover:text-primary cursor-pointer"
+                      >
+                        {websiteInfo.supportNumber}
+                      </a>
                     </li>
                   </ul>
                 </div>
