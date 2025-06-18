@@ -21,7 +21,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { bannervalidationSchema } from "@/validation/schemas";
+import { getBannerValidationSchema } from "@/validation/schemas";
 import { Label } from "@/components/ui/label";
 import scrollTop from "@/components/scrollTop";
 import Loading from "@/components/Loading";
@@ -47,7 +47,7 @@ const WebsiteBanner = ({ bannerIdToUpdate }) => {
       BannerImage: null,
       productLink: "",
     },
-    validationSchema: bannervalidationSchema,
+    validationSchema: getBannerValidationSchema(!!bannerIdToUpdateState),
     onSubmit: async (values) => {
       const formData = new FormData();
       formData.append("productLink", values.productLink);
@@ -137,7 +137,7 @@ const WebsiteBanner = ({ bannerIdToUpdate }) => {
       </div>
     );
   }
-
+  console.log(formik.values);
   return (
     <div className="container mx-auto p-6 pt-0">
       <div className="py-6">
@@ -296,15 +296,19 @@ const WebsiteBanner = ({ bannerIdToUpdate }) => {
                     className=" object-contain rounded-md"
                   />
                   <div className="py-2 ">
-                    <p className="text-sm lg:text-base text-gray-800">
-                      Link : {banner.productLink}
-                    </p>
+                    Link :
+                    <Link
+                      href={banner.productLink}
+                      className="text-sm lg:text-base text-gray-800 hover:text-primary"
+                    >
+                      {banner.productLink}
+                    </Link>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <Button
                     onClick={() => handleEditBanner(banner)}
-                    className="bg-blue-500 text-white p-2 rounded-md"
+                    className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded-md"
                   >
                     <FaEdit />
                   </Button>

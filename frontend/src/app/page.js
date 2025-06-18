@@ -119,7 +119,7 @@ const Home = () => {
         {showTopBtn && (
           <Button
             onClick={scrollToTop}
-            className="fixed bottom-24 right-8 z-50 p-2 rounded-full bg-primary  transition-all duration-300"
+            className="fixed bottom-14 right-8 z-30 p-2 rounded-full bg-primary  transition-all duration-300"
             data-aos="zoom-in"
           >
             <FaArrowUp />

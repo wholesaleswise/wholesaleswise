@@ -23,23 +23,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-
-const LogoValidationSchema = Yup.object({
-  websiteName: Yup.string().required("Website name is required"),
-  supportNumber: Yup.string()
-    .required("Support number is required")
-    .matches(
-      /^\+[1-9]\d{7,14}$/,
-      "Enter a valid international number (e.g.+614123456781)"
-    ),
-  email: Yup.string()
-    .email("Enter a valid email")
-    .required("Email is required"),
-  address: Yup.string().required("Address is required"),
-  tawkToId: Yup.string()
-    .matches(/^[a-zA-Z0-9/]+$/, "Invalid Tawk.to ID")
-    .nullable(),
-});
+import { LogoValidationSchema } from "@/validation/schemas";
+import { Textarea } from "@/components/ui/textarea";
 
 const WebsiteLogo = () => {
   const [logoIdToUpdate, setLogoIdToUpdate] = useState("");
@@ -90,6 +75,7 @@ const WebsiteLogo = () => {
       email: "",
       address: "",
       tawkToId: "",
+      keywords: "",
     },
     validationSchema: LogoValidationSchema,
     onSubmit: async (values) => {
@@ -100,6 +86,7 @@ const WebsiteLogo = () => {
       formData.append("email", values.email);
       formData.append("address", values.address);
       formData.append("tawkToId", values.tawkToId);
+      formData.append("keywords", values.keywords);
       try {
         let res;
         if (logoIdToUpdate) {
@@ -268,6 +255,24 @@ const WebsiteLogo = () => {
               />
               {formik.touched.tawkToId && formik.errors.tawkToId && (
                 <p className="text-red-600 text-sm">{formik.errors.tawkToId}</p>
+              )}
+            </div>
+            {/* SEO keywords */}
+            <div>
+              <Label className="font-semibold mb-2 flex gap-2">
+                SEO keywords <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                type="text"
+                name="keywords"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.keywords}
+                placeholder="Enter SEO keywords here..."
+                className="w-full border px-3 py-2 rounded mt-1"
+              />
+              {formik.touched.keywords && formik.errors.keywords && (
+                <p className="text-red-600 text-sm">{formik.errors.keywords}</p>
               )}
             </div>
 

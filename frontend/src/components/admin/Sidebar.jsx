@@ -42,16 +42,7 @@ const items = [
 
 const data = {
   navMain: [
-    {
-      title: "Product",
-      url: "/admin/product",
-      icon: LayoutList,
-      isActive: true,
-      items: [
-        { title: "Mange Products", url: "/admin/product" },
-        { title: "Add Product", url: "/admin/product/create" },
-      ],
-    },
+  
     {
       title: "Category",
       url: "/admin/category",
@@ -60,6 +51,16 @@ const data = {
       items: [
         { title: "Manage Category", url: "/admin/category" },
         { title: "Add Category", url: "/admin/category/create" },
+      ],
+    },
+      {
+      title: "Product",
+      url: "/admin/product",
+      icon: LayoutList,
+      isActive: true,
+      items: [
+        { title: "Mange Products", url: "/admin/product" },
+        { title: "Add Product", url: "/admin/product/create" },
       ],
     },
     {

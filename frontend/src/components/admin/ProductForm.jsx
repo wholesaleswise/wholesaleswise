@@ -259,7 +259,7 @@ export default function ProductForm({ slug }) {
                 type="text"
                 placeholder="Enter product name"
                 value={values.productName}
-                className="w-full p-3 border text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border text-sm border-gray-300 rounded-md "
                 onChange={handleChange}
               />
               {errors.productName && touched.productName && (
@@ -304,7 +304,7 @@ export default function ProductForm({ slug }) {
                 type="text"
                 placeholder="Enter Stock Keeping Unit"
                 value={values.SKU}
-                className="w-full p-3 border text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border text-sm border-gray-300 rounded-md "
                 onChange={handleChange}
               />
               {errors.SKU && touched.SKU && (
@@ -324,7 +324,7 @@ export default function ProductForm({ slug }) {
                 placeholder="Enter SEO keywords (comma-separated)"
                 value={values.keywords}
                 onChange={handleChange}
-                className="w-full p-3 border text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border text-sm border-gray-300 rounded-md "
               />
               {errors.keywords && touched.keywords && (
                 <div className={`${error}`}>{errors.keywords}</div>
@@ -338,7 +338,7 @@ export default function ProductForm({ slug }) {
               >
                 Price <p className="text-red-500">*</p>
               </Label>
-              <Input
+              {/* <Input
                 name="productPrice"
                 type="text"
                 placeholder="Enter product price"
@@ -347,7 +347,30 @@ export default function ProductForm({ slug }) {
                   const onlyNumbers = e.target.value.replace(/\D/g, "");
                   setFieldValue("productPrice", onlyNumbers);
                 }}
-                className="w-full p-3 border  text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border  text-sm border-gray-300 rounded-md "
+              /> */}
+
+              <Input
+                name="productPrice"
+                type="text"
+                placeholder="Enter product price"
+                value={values.productPrice}
+                onChange={(e) => {
+                  let val = e.target.value;
+                  val = val.replace(/[^0-9.]/g, "");
+                  const parts = val.split(".");
+                  if (parts.length > 2) {
+                    val = parts[0] + "." + parts.slice(1).join("");
+                  }
+                  setFieldValue("productPrice", val);
+                }}
+                onBlur={() => {
+                  const floatVal = parseFloat(values.productPrice);
+                  if (!isNaN(floatVal)) {
+                    setFieldValue("productPrice", floatVal.toFixed(2));
+                  }
+                }}
+                className="w-full p-3 border text-sm border-gray-300 rounded-md"
               />
               {errors.productPrice && touched.productPrice && (
                 <div className={`${error}`}>{errors.productPrice}</div>
@@ -369,7 +392,7 @@ export default function ProductForm({ slug }) {
                   const onlyNumbers = e.target.value.replace(/\D/g, "");
                   setFieldValue("discount", onlyNumbers);
                 }}
-                className="w-full p-3 border  text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border  text-sm border-gray-300 rounded-md "
               />
               {errors.discount && touched.discount && (
                 <div className={`${error}`}>{errors.discount}</div>
@@ -391,7 +414,7 @@ export default function ProductForm({ slug }) {
                   const onlyNumbers = e.target.value.replace(/\D/g, "");
                   setFieldValue("productTotalStockQty", onlyNumbers);
                 }}
-                className="w-full p-3 border  text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border  text-sm border-gray-300 rounded-md "
               />
               {errors.productTotalStockQty && touched.productTotalStockQty && (
                 <div className={`${error}`}>{errors.productTotalStockQty}</div>
@@ -459,7 +482,7 @@ export default function ProductForm({ slug }) {
               <RichTextEditor
                 content={values.productDescription}
                 onChange={(value) => setFieldValue("productDescription", value)}
-                className="border text-sm border-gray-300  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border text-sm border-gray-300  rounded-md "
               />
               {errors.productDescription && touched.productDescription && (
                 <div className={`${error}`}>{errors.productDescription}</div>

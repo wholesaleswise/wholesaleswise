@@ -9,6 +9,10 @@ const WebsiteInfoSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    keywords: {
+      type: String,
+      required: true,
+    },
     supportNumber: {
       type: String,
       required: true,

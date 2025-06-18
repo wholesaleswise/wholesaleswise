@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "../ui/button";
 import { MdSearchOff } from "react-icons/md";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const MyOrderCom = ({ data }) => {
   const [sortOrder, setSortOrder] = useState("desc");

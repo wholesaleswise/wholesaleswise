@@ -6,13 +6,14 @@ class WebsiteInfoController {
   // CREATE
   static createInfo = async (req, res) => {
     try {
-      const { websiteName, supportNumber, email, address, tawkToId } = req.body;
+      const { websiteName, supportNumber, email, address, tawkToId, keywords } =
+        req.body;
       const logoImage = req.file;
 
-      if (!websiteName || !supportNumber || !email || !address) {
+      if (!websiteName || !supportNumber || !email || !address || !keywords) {
         return res.status(400).send({
           message:
-            "websiteName, supportNumber, email, and address are required",
+            "websiteName,supportNumber,email,keywords and address are required",
         });
       }
 
@@ -49,6 +50,7 @@ class WebsiteInfoController {
       const newInfo = await WebsiteInfoModel.create({
         logoImage: imageUrl,
         websiteName,
+        keywords,
         supportNumber,
         email,
         address,
@@ -98,7 +100,8 @@ class WebsiteInfoController {
   // UPDATE
   static updateInfo = async (req, res) => {
     try {
-      const { websiteName, supportNumber, email, address, tawkToId } = req.body;
+      const { websiteName, supportNumber, email, address, tawkToId, keywords } =
+        req.body;
       const logoImage = req.file;
 
       let info;
@@ -159,6 +162,7 @@ class WebsiteInfoController {
       if (supportNumber) info.supportNumber = supportNumber;
       if (email) info.email = email;
       if (address) info.address = address;
+      if (keywords) info.keywords = keywords;
       if (tawkToId) info.tawkToId = tawkToId;
       try {
         await info.save();

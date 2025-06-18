@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
@@ -44,18 +45,11 @@ const productsPerPage = 20;
 const ProductList = () => {
   const { data: productData, isLoading, isError } = useGetAllProductQuery();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
-  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
 
-  useEffect(() => {
-    if (productData?.products) {
-      setProducts(productData.products);
-      setCurrentPage(1);
-    }
-  }, [productData]);
-
+  // Initialize AOS once
   useEffect(() => {
     AOS.init({ duration: 800, once: true });
   }, []);
@@ -64,7 +58,13 @@ const ProductList = () => {
     AOS.refresh();
   }, [productData]);
 
-  // Memoize filtered products
+  // Reset current page when products or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, productData]);
+
+  const products = productData?.products || [];
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     const searchTerm = search.toLowerCase();
@@ -75,17 +75,16 @@ const ProductList = () => {
     );
   }, [products, search]);
 
-  // Memoize current products for the current page
+  const totalPages = useMemo(
+    () => Math.ceil(filteredProducts.length / productsPerPage),
+    [filteredProducts]
+  );
+
   const currentProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * productsPerPage;
     const endIndex = startIndex + productsPerPage;
     return filteredProducts.slice(startIndex, endIndex);
   }, [currentPage, filteredProducts]);
-
-  const totalPages = useMemo(
-    () => Math.ceil(filteredProducts.length / productsPerPage),
-    [filteredProducts]
-  );
 
   const handleDelete = useCallback(
     async (id) => {
@@ -96,7 +95,7 @@ const ProductList = () => {
         } else if (response?.error?.data?.message) {
           toast.error(response.error.data.message);
         }
-      } catch (error) {
+      } catch {
         toast.error("Error deleting product");
       }
     },
@@ -124,17 +123,14 @@ const ProductList = () => {
     [totalPages]
   );
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  if (isLoading) return <Loading />;
 
-  if (isError) {
+  if (isError)
     return (
       <div className="flex justify-center items-center min-h-[30vh]">
         Error fetching products!
       </div>
     );
-  }
 
   return (
     <div className="w-full mt-4 mb-8">
@@ -190,7 +186,18 @@ const ProductList = () => {
       </div>
 
       {/* Product Table */}
-      {currentProducts.length > 0 ? (
+      {!isLoading && currentProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <MdSearchOff className="text-[70px]" />
+          <h2 className="text-2xl md:text-4xl font-semibold text-red-800 ">
+            Oops! No results found
+          </h2>
+          <p className="text-sm text-gray-500  mt-2 mb-6 max-w-sm text-center">
+            We couldn't find any matches for your search. Please try different
+            keywords.
+          </p>
+        </div>
+      ) : (
         <div className="w-[90%] mx-auto flex flex-col justify-center ">
           <Table className="min-w-max " data-aos="fade-right">
             <TableHeader>
@@ -261,17 +268,6 @@ const ProductList = () => {
               ))}
             </TableBody>
           </Table>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center min-h-[70vh]">
-          <MdSearchOff className="text-[70px]" />
-          <h2 className="text-2xl md:text-4xl font-semibold text-red-800 ">
-            Oops! No results found
-          </h2>
-          <p className="text-sm text-gray-500  mt-2 mb-6 max-w-sm text-center">
-            We couldn't find any matches for your search. Please try different
-            keywords.
-          </p>
         </div>
       )}
 

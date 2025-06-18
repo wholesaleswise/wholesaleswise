@@ -140,42 +140,50 @@ export const SocialLinkValidationSchema = Yup.object({
     .required("Social Link URL is required"),
 });
 
-export const bannervalidationSchema = Yup.object({
-  BannerImage: Yup.mixed()
-    .required("Banner Image is required")
-    .test("fileSize", "Image must be under 2MB", (value) =>
-      value ? value.size <= 2 * 1024 * 1024 : false
-    )
-    .test("fileType", "Unsupported image type", (value) =>
-      value
-        ? ["image/jpeg", "image/png", "image/webp"].includes(value.type)
-        : false
-    )
-    .test(
-      "dimensions",
-      "Image must be exactly 1200x300 pixels",
-      async (file) => {
-        if (!file) return false;
+export const getBannerValidationSchema = (isEdit = false) =>
+  Yup.object({
+    BannerImage: Yup.mixed()
+      .nullable()
+      .when([], {
+        is: () => !isEdit,
+        then: (schema) =>
+          schema
+            .required("Banner Image is required")
+            .test("fileSize", "Image must be under 2MB", (value) =>
+              value ? value.size <= 2 * 1024 * 1024 : false
+            )
+            .test("fileType", "Unsupported image type", (value) =>
+              value
+                ? ["image/jpeg", "image/png", "image/webp"].includes(value.type)
+                : false
+            )
+            .test(
+              "dimensions",
+              "Image must be exactly 1200x300 pixels",
+              async (file) => {
+                if (!file) return false;
 
-        const imageLoaded = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target?.result;
-            img.onload = () => {
-              resolve(img.width === 1200 && img.height === 300);
-            };
-          };
-          reader.readAsDataURL(file);
-        });
+                const imageLoaded = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target?.result;
+                    img.onload = () => {
+                      resolve(img.width === 1200 && img.height === 300);
+                    };
+                  };
+                  reader.readAsDataURL(file);
+                });
 
-        return imageLoaded;
-      }
-    ),
-  productLink: Yup.string()
-    .url("Invalid URL")
-    .required("Product Link URL is required"),
-});
+                return imageLoaded;
+              }
+            ),
+        otherwise: (schema) => schema.notRequired(),
+      }),
+    productLink: Yup.string()
+      .url("Invalid URL")
+      .required("Product Link URL is required"),
+  });
 
 export const checkoutValidationSchema = Yup.object({
   fullName: Yup.string().required("Name is required"),
@@ -193,6 +201,25 @@ export const checkoutValidationSchema = Yup.object({
   address: Yup.object().required("Shipping address is required"),
   paymentMethod: Yup.string().required("Payment method is required"),
   cart: Yup.array(),
+});
+export const LogoValidationSchema = Yup.object({
+  websiteName: Yup.string().required("Website name is required"),
+  supportNumber: Yup.string()
+    .required("Support number is required")
+    .matches(
+      /^\+[1-9]\d{7,14}$/,
+      "Enter a valid international number (e.g.+614123456781)"
+    ),
+  email: Yup.string()
+    .email("Enter a valid email")
+    .required("Email is required"),
+  address: Yup.string().required("Address is required"),
+  tawkToId: Yup.string()
+    .matches(/^[a-zA-Z0-9/]+$/, "Invalid Tawk.to ID")
+    .nullable(),
+  keywords: Yup.string()
+    .required("Keywords are required")
+    .max(200, "Keep keywords under 200 characters"),
 });
 
 export const TermsValidationSchema = Yup.object({

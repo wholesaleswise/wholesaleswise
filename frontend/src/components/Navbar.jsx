@@ -43,6 +43,7 @@ import { useFetchCartQuery } from "@/lib/services/cart";
 import { useGetAllProductQuery } from "@/lib/services/product";
 import { useGetInfoQuery } from "@/lib/services/websiteInfo";
 import Cart from "./cart";
+import Aos from "aos";
 
 const menu = [
   {
@@ -144,6 +145,15 @@ const Navbar = () => {
       setSearch("");
     }
   }, [pathname]);
+
+  useEffect(() => {
+    Aos.init({
+      duration: 1000,
+      once: true,
+      offset: 100,
+      easing: "ease-in-out",
+    });
+  }, []);
 
   // Close profile dropdown if click is outside of profile ref
   useEffect(() => {
@@ -454,9 +464,12 @@ const Navbar = () => {
               <div className=" flex-col lg:flex lg:flex-row items-center text-center text-sm lg:gap-2">
                 <div className=" flex gap-2 items-center ">
                   <Headphones className="h-5 w-5 text-primary" />
-                  <span className="font-bold text-primary">
-                    {info?.data?.supportNumber}
-                  </span>
+                  <a
+                    href={`tel:${info.data.supportNumber}`}
+                    className="font-bold text-primary cursor-pointer"
+                  >
+                    {info.data.supportNumber}
+                  </a>
                 </div>
 
                 <span className="text-gray-500 text-xs ">Customer Support</span>
@@ -515,23 +528,28 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <div
-            className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50"
+            className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50"
             role="dialog"
             aria-modal="true"
+            aria-label="Mobile menu"
           >
-            <div className="fixed right-0 top-0 h-full   w-full sm:w-1/2 flex flex-col justify-between overflow-y-auto bg-white px-6 py-6 shadow-lg sm:ring-1 sm:ring-gray-900/10">
-              <div className="flex items-center justify-between">
-                <Logo className="h-10 w-auto object-contain" />
+            <div
+              data-aos="fade-left"
+              className="fixed right-0 top-0 h-full w-60 flex flex-col justify-between overflow-y-auto z-50 bg-gray-100 px-5  py-6 shadow-lg"
+            >
+              {/* Header: Logo and Close */}
+              <div className="flex items-center justify-between mb-6">
+                <Logo className="h-12 w-auto object-contain" />
                 <Button
                   type="button"
                   onClick={toggleMenu}
-                  className="rounded-md py-1 px-2  transition"
+                  className="rounded-md px-2 py-1 hover:bg-hover transition"
+                  aria-label="Close menu"
                 >
                   <svg
-                    className="h-7 w-7"
+                    className="h-6 w-6 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth="1.5"
@@ -548,44 +566,49 @@ const Navbar = () => {
               </div>
 
               {/* Menu Links */}
-              <div className="flex flex-col items-center gap-4  ">
+              <nav className="flex flex-col items-start justify-center gap-4 text-gray-800 text-[15px] font-medium">
                 {menu.map((item) => (
                   <Link
                     key={item.id}
                     href={item.path}
                     onClick={toggleMenu}
                     className={clsx(
-                      "flex items-center gap-3 text-base  pl-12 font-medium w-full px-3 text-primary py-2 rounded-md transition",
-                      pathname === item.path ? "bg-primary text-light " : " "
+                      "flex items-center  gap-3 px-6 py-1 rounded-md w-full transition-colors",
+                      pathname === item.path
+                        ? "bg-primary text-white font-semibold"
+                        : "hover:bg-primary"
                     )}
                   >
-                    <span className="text-xl ">{item.icon}</span>
+                    <span className="text-xl">{item.icon}</span>
                     {item.title}
                   </Link>
                 ))}
-              </div>
+              </nav>
 
-              {/* Sign In Button */}
-              <div className="mb-5">
+              {/* Sign In and Support Section */}
+              <div className="mt-8">
                 {!user && !isAuthenticated && (
                   <Link href="/account/login" onClick={toggleMenu}>
-                    <Button className="w-full bg-primary hover:bg-hover text-white py-2 rounded-md font-semibold">
+                    <Button className="w-full  text-white py-2 rounded-md font-semibold text-sm">
                       Sign In
                     </Button>
                   </Link>
                 )}
+
                 {info?.data?.supportNumber && (
-                  <div className=" flex flex-col justify-center items-center text-sm lg:gap-2">
-                    <div className=" flex gap-2 items-center mt-5 ">
-                      <Headphones className="h-5 w-5 text-gray-500 " />
-                      <span className="text-gray-500 text-xs ">
+                  <div className="flex flex-col justify-center items-center text-sm mt-6">
+                    <div className="flex gap-2 items-center">
+                      <Headphones className="h-5 w-5 text-gray-500" />
+                      <span className="text-gray-500 text-xs">
                         Customer Support
                       </span>
                     </div>
-
-                    <span className="font-bold text-primary">
-                      {info?.data?.supportNumber}
-                    </span>
+                    <a
+                      href={`tel:${info.data.supportNumber}`}
+                      className="font-bold text-primary mt-1"
+                    >
+                      {info.data.supportNumber}
+                    </a>
                   </div>
                 )}
               </div>

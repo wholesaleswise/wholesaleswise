@@ -411,13 +411,23 @@ const SingleProduct = ({ slug }) => {
                   Available Stack Qty: {productData?.productTotalStockQty}
                 </div>
               )}
+
               <div className="flex items-center gap-3 mt-1">
-                <div className="flex items-center gap-1">
-                  <p className="text-base ">{productData?.rating}</p>
-                  <RatingStars rating={productData?.rating} />
-                </div>
-                <span className="text-gray-700">|</span>
-                <p className="text-sm ">{productData?.numReviews} Ratings</p>
+                {productData?.rating != 0 && productData.rating > 0 && (
+                  <div className="flex items-center gap-1">
+                    <p className="text-base ">{productData?.rating}</p>
+                    <RatingStars rating={productData?.rating} />
+                  </div>
+                )}
+                {productData?.numReviews != 0 &&
+                  productData?.numReviews > 0 && (
+                    <>
+                      <span className="text-gray-700">|</span>
+                      <p className="text-sm ">
+                        {productData?.numReviews} Ratings
+                      </p>
+                    </>
+                  )}
               </div>
               <div className="flex items-center gap-2 text-xl lg:text-xl font-medium my-1">
                 {discountedPrice === productData?.productPrice ? (
@@ -434,7 +444,7 @@ const SingleProduct = ({ slug }) => {
                     </h4>
                   </>
                 )}
-                {productData?.discount && (
+                {productData?.discount != 0 && productData.discount > 0 && (
                   <div className="flex py-1 px-2 bg-blue-600 text-white font-semibold rounded-lg">
                     <span className=" text-sm">
                       {productData?.discount}% off

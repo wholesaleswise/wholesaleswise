@@ -13,6 +13,7 @@ router.get(
   "/category-wise-product/:category",
   productController.getCategoryWiseProduct
 );
+router.get('/discount/:percentage', productController.getProductsByDiscount);
 router.get("/", productController.getAllProducts);
 
 router.use(accessTokenAutoRefresh);

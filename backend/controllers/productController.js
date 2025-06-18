@@ -107,12 +107,13 @@ class ProductController {
           message: "Image upload failed",
         });
       }
+      const gpsPrice = parseFloat((productPrice * 1.1).toFixed(2));
       // Create new product
       const product = new ProductModel({
         productName,
         productDescription,
         SKU,
-        productPrice,
+        productPrice: gpsPrice,
         category,
         productTotalStockQty,
         productImageUrls: imageUrls,
@@ -315,13 +316,20 @@ class ProductController {
         ? [...newImageUrlstosave]
         : [...imageUrls];
 
-      console.log(updatedImageUrls);
+      let gpsPrice = product.productPrice;
+
+      if (productPrice != product.productPrice) {
+        gpsPrice = parseFloat((productPrice * 1.1).toFixed(2));
+        console.log(`Original price updated. New GPS price: ${gpsPrice}`);
+      } else {
+        console.log("Price unchanged. Skipping GPS update.");
+      }
 
       const updateData = {
         productName,
         productDescription,
         SKU,
-        productPrice,
+        productPrice: gpsPrice,
         category,
         productTotalStockQty,
         productImageUrls: updatedImageUrls,
@@ -565,13 +573,12 @@ class ProductController {
       const avgRating = numReviews > 0 ? Math.floor(ratingSum / numReviews) : 0;
       console.log(avgRating);
 
-      // Update the product with the new average rating and number of reviews
       const updatedProduct = await ProductModel.findOneAndUpdate(
         { slug },
         {
           $set: {
-            rating: avgRating, // Set the new average rating
-            numReviews: numReviews, // Set the new number of reviews
+            rating: avgRating,
+            numReviews: numReviews,
           },
         },
         { new: true }
@@ -581,8 +588,8 @@ class ProductController {
       res.status(200).send({
         success: true,
         message: "Review updated successfully",
-        product: updatedProduct, // Optionally return the updated product
-        review: updatedReview, // Optionally return the updated review
+        product: updatedProduct,
+        review: updatedReview,
       });
     } catch (error) {
       console.error(error);
@@ -714,6 +721,34 @@ class ProductController {
         message: err.message || err,
         error: true,
         success: false,
+      });
+    }
+  };
+
+  static getProductsByDiscount = async (req, res) => {
+    try {
+      const { percentage } = req.params;
+      const exactDiscount = parseFloat(percentage);
+
+      if (isNaN(exactDiscount)) {
+        return res.status(400).send({ message: "Invalid discount percentage" });
+      }
+
+      const products = await ProductModel.find({
+        discount: exactDiscount,
+      });
+
+      res.status(200).send({
+        success: true,
+        message: `Products with exactly ${exactDiscount}% discount`,
+        products,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        success: false,
+        message: error.message || "Error while getting discounted products",
+        error,
       });
     }
   };
