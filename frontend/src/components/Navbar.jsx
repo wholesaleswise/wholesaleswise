@@ -310,7 +310,7 @@ const Navbar = () => {
                     />
                     <div>
                       <div className="font-medium text-sm">
-                        {product.productName}
+                        {product?.productName}
                       </div>
                       <div className="text-xs text-gray-500">
                         {product.category?.categoryName}
@@ -465,10 +465,10 @@ const Navbar = () => {
                 <div className=" flex gap-2 items-center ">
                   <Headphones className="h-5 w-5 text-primary" />
                   <a
-                    href={`tel:${info.data.supportNumber}`}
+                    href={`tel:${info?.data?.supportNumber}`}
                     className="font-bold text-primary cursor-pointer"
                   >
-                    {info.data.supportNumber}
+                    {info?.data?.supportNumber}
                   </a>
                 </div>
 
@@ -604,10 +604,10 @@ const Navbar = () => {
                       </span>
                     </div>
                     <a
-                      href={`tel:${info.data.supportNumber}`}
+                      href={`tel:${info?.data?.supportNumber}`}
                       className="font-bold text-primary mt-1"
                     >
-                      {info.data.supportNumber}
+                      {info?.data?.supportNumber}
                     </a>
                   </div>
                 )}

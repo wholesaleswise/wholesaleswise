@@ -100,10 +100,10 @@ const Footer = () => {
                     <li className="flex items-center">
                       <PhoneCall size={18} className="mr-2 text-light " />
                       <a
-                        href={`tel:${websiteInfo.supportNumber}`}
+                        href={`tel:${websiteInfo?.supportNumber}`}
                         className=" hover:text-primary cursor-pointer"
                       >
-                        {websiteInfo.supportNumber}
+                        {websiteInfo?.supportNumber}
                       </a>
                     </li>
                   </ul>
