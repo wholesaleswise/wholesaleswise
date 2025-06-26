@@ -45,6 +45,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { IoLocation } from "react-icons/io5";
+import { useApplyCouponMutation } from "@/lib/services/coupon";
 
 const SelectedItem = ({ item }) => {
   const { productId, quantity } = item;
@@ -88,11 +89,15 @@ const Checkout = () => {
   const [addToOrderStripe] = useAddToOrderStripeMutation();
   const { data: response, isLoading: addressLoading } =
     useGetAllAddressesQuery();
+  const [applyCoupon, { isLoading: applying }] = useApplyCouponMutation();
   const router = useRouter();
 
   const [user, setUser] = useState(null);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [shipping, setShipping] = useState(0);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
 
   useEffect(() => {
     if (data && isSuccess) {
@@ -178,6 +183,29 @@ const Checkout = () => {
       }
     },
   });
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code");
+      setAppliedCoupon(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await applyCoupon(couponCode);
+      console.log(data);
+      if (error) {
+        setCouponError(error?.data?.message || "Invalid or expired coupon");
+        setAppliedCoupon(null);
+      } else {
+        setAppliedCoupon(data);
+        setCouponError("");
+        toast.success(`Coupon ${data.code} applied!`);
+      }
+    } catch (err) {
+      setCouponError("Failed to apply coupon. Try again.");
+      setAppliedCoupon(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -195,7 +223,15 @@ const Checkout = () => {
 
   const totalAmount = calculateTotal();
   const SubTotal = totalAmount?.toFixed(2);
-  const total = (Number(SubTotal) + Number(shipping)).toFixed(2);
+  const discountAmount = (
+    (Number(SubTotal) * appliedCoupon?.discount) /
+    100
+  ).toFixed(2);
+
+  const total = (Number(SubTotal) - discountAmount + Number(shipping)).toFixed(
+    2
+  );
+  // const total = (Number(SubTotal) + Number(shipping)).toFixed(2);
 
   return (
     <div className=" w-full container mx-auto md:p-4 py-8">
@@ -268,19 +304,51 @@ const Checkout = () => {
       ) : (
         <div data-aos="fade-up">
           <div className="grid  lg:grid-cols-2 gap-4 my-4 ">
-            <div className=" mx-4" data-aos="fade-right">
+            <div className=" mx-4 " data-aos="fade-right">
               <p className="text-xl ">Order Summary</p>
               <p className="text-gray-400 text-base">
                 Check your items. And select a suitable shipping method.
               </p>
-              <Card className="mt-8 space-y-3    px-2 py-4   sm:px-6">
+              <Card className="mt-8 space-y-3  bg-gray-50 shadow-none  px-2 py-4   sm:px-6">
                 {cartItems?.data.map((item) => (
                   <div key={item._id}>
                     <SelectedItem item={item} />
                   </div>
                 ))}
               </Card>
-              <div className=" pt-8">
+              <div className="mt-6">
+                <p className="text-xl "> Apply Coupon</p>
+                <div className="flex flex-col md:flex-row gap-2 pt-4">
+                  <Input
+                    id="couponCode"
+                    type="text"
+                    placeholder="Enter coupon code"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value);
+                      if (couponError) {
+                        setCouponError("");
+                      }
+                    }}
+                    className="w-auto"
+                  />
+                  <Button className="w-auto" onClick={handleApplyCoupon}>
+                    Apply
+                  </Button>
+                </div>
+                {couponError && (
+                  <p className="text-red-500 text-sm mt-2 ml-2">
+                    {couponError}
+                  </p>
+                )}
+                {appliedCoupon && (
+                  <p className="text-green-600 mt-1">
+                    Coupon applied: {appliedCoupon.code} -{" "}
+                    {appliedCoupon.discount}% off
+                  </p>
+                )}
+              </div>
+              <div className="">
                 <div className="mt-8 flex gap-2 text-lg font-medium">
                   Choose Payment Method
                   <p className="text-red-500">*</p>

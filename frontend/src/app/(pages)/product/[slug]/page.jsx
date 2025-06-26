@@ -98,7 +98,12 @@ const SingleProduct = ({ slug }) => {
   ] = useDeleteReviewMutation();
   const [
     addToCart,
-    { isSuccess: cartSuccess, isError: cartError, error: cartErrorDetails },
+    {
+      isSuccess: cartSuccess,
+      isLoading: CartLoading,
+      isError: cartError,
+      error: cartErrorDetails,
+    },
   ] = useAddToCartMutation();
 
   const [productData, setProductData] = useState(null);
@@ -462,10 +467,10 @@ const SingleProduct = ({ slug }) => {
                 <Button
                   type="button"
                   onClick={() => handleAddToCartClick(productData?._id)}
-                  disabled={cartSuccess}
+                  disabled={CartLoading}
                 >
                   <AiOutlineShoppingCart size={20} />
-                  {cartSuccess ? (
+                  {CartLoading ? (
                     <span>Adding...</span>
                   ) : (
                     <span>Add to cart</span>

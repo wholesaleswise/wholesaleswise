@@ -42,7 +42,6 @@ const items = [
 
 const data = {
   navMain: [
-  
     {
       title: "Category",
       url: "/admin/category",
@@ -53,7 +52,7 @@ const data = {
         { title: "Add Category", url: "/admin/category/create" },
       ],
     },
-      {
+    {
       title: "Product",
       url: "/admin/product",
       icon: LayoutList,
@@ -81,7 +80,9 @@ const data = {
       isActive: true,
       items: [
         { title: "Update Website Info", url: "/admin/settings" },
+
         { title: "Change Password", url: "/admin/settings/change-password" },
+        { title: "Manage Coupon", url: "/admin/settings/coupon" },
         { title: "Manage Address", url: "/admin/settings/address" },
 
         {

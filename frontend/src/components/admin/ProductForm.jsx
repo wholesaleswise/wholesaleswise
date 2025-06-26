@@ -338,18 +338,6 @@ export default function ProductForm({ slug }) {
               >
                 Price <p className="text-red-500">*</p>
               </Label>
-              {/* <Input
-                name="productPrice"
-                type="text"
-                placeholder="Enter product price"
-                value={values.productPrice}
-                onChange={(e) => {
-                  const onlyNumbers = e.target.value.replace(/\D/g, "");
-                  setFieldValue("productPrice", onlyNumbers);
-                }}
-                className="w-full p-3 border  text-sm border-gray-300 rounded-md "
-              /> */}
-
               <Input
                 name="productPrice"
                 type="text"

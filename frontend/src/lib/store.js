@@ -13,6 +13,7 @@ import termsConditionApi from "./services/termsCondition";
 import privacyPolicyApi from "./services/privacyPolicy";
 import contactApi from "./services/contact";
 import aboutApi from "./services/about";
+import { couponApi } from "./services/coupon";
 
 export const store = configureStore({
   reducer: {
@@ -29,6 +30,7 @@ export const store = configureStore({
     [privacyPolicyApi.reducerPath]: privacyPolicyApi.reducer,
     [contactApi.reducerPath]: contactApi.reducer,
     [aboutApi.reducerPath]: aboutApi.reducer,
+    [couponApi.reducerPath]: couponApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -44,7 +46,8 @@ export const store = configureStore({
       termsConditionApi.middleware,
       privacyPolicyApi.middleware,
       contactApi.middleware,
-      aboutApi.middleware
+      aboutApi.middleware,
+      couponApi.middleware
     ),
 });
 

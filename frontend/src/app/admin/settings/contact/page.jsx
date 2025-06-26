@@ -95,7 +95,7 @@ const ContactManagementPage = () => {
   const isSubmitting = adding || updating;
 
   return (
-    <div className="container mx-auto p-4 pt-0">
+    <div className="container mx-auto p-4 pt-0 pb-6">
       {/* Breadcrumb */}
       <div className="py-6">
         <Breadcrumb>

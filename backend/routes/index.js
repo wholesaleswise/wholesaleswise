@@ -13,6 +13,7 @@ import termsCondition from "./termsConditionRoutes.js";
 import privacyPolicy from "./privacyPolicyRoutes.js";
 import contact from "./contactRoutes.js";
 import about from "./aboutRoutes.js";
+import couponRoutes from "./couponRoutes.js";
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use("/banner", bannerRoutes);
 router.use("/info", websiteInfoRoutes);
 router.use("/social", socialLinkRoutes);
 router.use("/terms-condition", termsCondition);
+router.use("/coupons", couponRoutes);
 router.use("/privacy-policy", privacyPolicy);
 router.use("/contact", contact);
 router.use("/about-us", about);

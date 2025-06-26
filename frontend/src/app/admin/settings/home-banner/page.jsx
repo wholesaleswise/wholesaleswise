@@ -307,7 +307,10 @@ const WebsiteBanner = ({ bannerIdToUpdate }) => {
                 </div>
                 <div className="flex gap-4">
                   <Button
-                    onClick={() => handleEditBanner(banner)}
+                    onClick={() => {
+                      handleEditBanner(banner);
+                      scrollTop();
+                    }}
                     className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded-md"
                   >
                     <FaEdit />
