@@ -26,20 +26,16 @@ import {
 } from "@/components/ui/breadcrumb";
 import scrollTop from "@/components/scrollTop";
 import Link from "next/link";
+import { couponSchema } from "@/validation/schemas";
 
-// 🔧 Converts UTC time to browser-local time for datetime-local input
+// Converts UTC time to local datetime-local input value
 const toLocalDateTimeInput = (utcDate) => {
+  if (!utcDate) return "";
   const date = new Date(utcDate);
   const timezoneOffset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - timezoneOffset * 60000);
-  return localDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+  return localDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
 };
-
-const couponSchema = Yup.object({
-  code: Yup.string().required("Coupon code is required"),
-  discount: Yup.number().min(1).max(100).required("Discount is required"),
-  expiresAt: Yup.date().required("Expiry date and time is required"),
-});
 
 const CouponPage = () => {
   const [editingId, setEditingId] = useState(null);
@@ -53,16 +49,35 @@ const CouponPage = () => {
     initialValues: {
       code: "",
       discount: "",
+      startDate: "",
       expiresAt: "",
+      maxUses: "",
+      maxUsesPerUser: "1",
+      active: true,
     },
     validationSchema: couponSchema,
     onSubmit: async (values) => {
       try {
+        const preparedValues = {
+          ...values,
+          discount: Number(values.discount),
+          maxUses:
+            values.maxUses === "" || values.maxUses === null
+              ? null
+              : Number(values.maxUses),
+          maxUsesPerUser: Number(values.maxUsesPerUser),
+          startDate: new Date(values.startDate),
+          expiresAt: new Date(values.expiresAt),
+        };
+
         if (editingId) {
-          const res = await updateCoupon({ id: editingId, data: values });
+          const res = await updateCoupon({
+            id: editingId,
+            data: preparedValues,
+          });
           toast.success(res?.data?.message || "Coupon updated!");
         } else {
-          const res = await addCoupon(values);
+          const res = await addCoupon(preparedValues);
           toast.success(res?.data?.message || "Coupon added!");
         }
         formik.resetForm();
@@ -76,8 +91,12 @@ const CouponPage = () => {
   const handleEdit = (coupon) => {
     formik.setValues({
       code: coupon.code,
-      discount: coupon.discount,
+      discount: String(coupon.discount),
+      startDate: toLocalDateTimeInput(coupon.startDate),
       expiresAt: toLocalDateTimeInput(coupon.expiresAt),
+      maxUses: coupon.maxUses === null ? "" : String(coupon.maxUses),
+      maxUsesPerUser: String(coupon.maxUsesPerUser),
+      active: coupon.active,
     });
     setEditingId(coupon._id);
   };
@@ -125,7 +144,9 @@ const CouponPage = () => {
         </h2>
 
         <div>
-          <Label htmlFor="code">Coupon Code</Label>
+          <Label htmlFor="code" className="font-semibold mb-2 flex gap-2">
+            Coupon Code <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="code"
             placeholder="e.g., NEWYEAR50"
@@ -138,10 +159,12 @@ const CouponPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="discount">Discount (%)</Label>
+          <Label htmlFor="discount" className="font-semibold mb-2 flex gap-2">
+            Discount (%) <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="discount"
-            type="number"
+            type="text" // changed to text
             placeholder="e.g., 20"
             className="w-full"
             {...formik.getFieldProps("discount")}
@@ -152,7 +175,24 @@ const CouponPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="expiresAt">Expiry Date & Time</Label>
+          <Label htmlFor="startDate" className="font-semibold mb-2 flex gap-2">
+            Start Date &amp; Time <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="startDate"
+            type="datetime-local"
+            className="w-full"
+            {...formik.getFieldProps("startDate")}
+          />
+          {formik.touched.startDate && formik.errors.startDate && (
+            <p className="text-red-500 text-sm">{formik.errors.startDate}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="expiresAt" className="font-semibold mb-2 flex gap-2">
+            Expiry Date &amp; Time <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="expiresAt"
             type="datetime-local"
@@ -164,14 +204,63 @@ const CouponPage = () => {
           )}
         </div>
 
+        <div>
+          <Label htmlFor="maxUses" className="font-semibold mb-2 flex gap-2">
+            Max Uses (Global)
+          </Label>
+          <Input
+            id="maxUses"
+            type="text" // changed to text
+            placeholder="Leave empty for unlimited"
+            className="w-full"
+            {...formik.getFieldProps("maxUses")}
+          />
+          {formik.touched.maxUses && formik.errors.maxUses && (
+            <p className="text-red-500 text-sm">{formik.errors.maxUses}</p>
+          )}
+        </div>
+
+        <div>
+          <Label
+            htmlFor="maxUsesPerUser"
+            className="font-semibold mb-2 flex gap-2"
+          >
+            Max Uses Per User <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="maxUsesPerUser"
+            type="text" // changed to text
+            className="w-full"
+            {...formik.getFieldProps("maxUsesPerUser")}
+          />
+          {formik.touched.maxUsesPerUser && formik.errors.maxUsesPerUser && (
+            <p className="text-red-500 text-sm">
+              {formik.errors.maxUsesPerUser}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="active"
+            type="checkbox"
+            className="cursor-pointer"
+            {...formik.getFieldProps("active")}
+            checked={formik.values.active}
+          />
+          <Label htmlFor="active" className="cursor-pointer select-none">
+            Active
+          </Label>
+        </div>
+
         <Button type="submit" className="w-full">
           {editingId ? "Update Coupon" : "Add Coupon"}
         </Button>
       </form>
 
       {/* Coupon List */}
-      <div className="mt-10 max-w-4xl mx-auto px-2">
-        <h3 className="text-2xl font-semibold text-center mb-4">All Coupons</h3>
+      <div className="mt-10 max-w-xl mx-auto px-2">
+        <h3 className="text-xl font-semibold text-center mb-4">All Coupons</h3>
 
         {isLoading ? (
           <Loading />
@@ -182,7 +271,38 @@ const CouponPage = () => {
         ) : (
           <div className="space-y-4">
             {coupons.map((coupon) => {
-              const isExpired = new Date(coupon.expiresAt) < new Date();
+              const now = new Date();
+              const startDate = new Date(coupon.startDate);
+              const expiresAt = new Date(coupon.expiresAt);
+
+              const totalUses =
+                coupon.usedBy?.reduce((sum, u) => sum + u.timesUsed, 0) || 0;
+
+              const isExpired = now > expiresAt;
+              const notStarted = now < startDate;
+              const inactive = !coupon.active;
+              const usageLimitReached =
+                coupon.maxUses !== null && totalUses >= coupon.maxUses;
+
+              let statusLabel = "";
+              let statusColor = "";
+
+              if (inactive) {
+                statusLabel = "Inactive";
+                statusColor = "text-gray-500";
+              } else if (notStarted) {
+                statusLabel = "Not Started";
+                statusColor = "text-yellow-500";
+              } else if (isExpired) {
+                statusLabel = "Expired";
+                statusColor = "text-red-500";
+              } else if (usageLimitReached) {
+                statusLabel = "Usage Limit Reached";
+                statusColor = "text-red-600";
+              } else {
+                statusLabel = "Active";
+                statusColor = "text-green-500";
+              }
 
               return (
                 <div
@@ -192,24 +312,28 @@ const CouponPage = () => {
                   <div>
                     <p className="text-lg font-semibold text-primary">
                       {coupon.code}{" "}
-                      {isExpired ? (
-                        <span className="text-red-500 text-sm ml-2">
-                          (Expired)
-                        </span>
-                      ) : (
-                        <span className="text-green-500 text-sm ml-2">
-                          (Active)
-                        </span>
-                      )}
+                      <span className={`${statusColor} text-sm ml-2`}>
+                        ({statusLabel})
+                      </span>
                     </p>
                     <p className="text-sm text-gray-600">
                       Discount: <strong>{coupon.discount}%</strong>
                     </p>
                     <p className="text-sm text-gray-600">
-                      Expires at:{" "}
+                      Start Date: <strong>{startDate.toLocaleString()}</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Expires at: <strong>{expiresAt.toLocaleString()}</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Max Uses (Global):{" "}
                       <strong>
-                        {new Date(coupon.expiresAt).toLocaleString()}
+                        {coupon.maxUses === null ? "Unlimited" : coupon.maxUses}
                       </strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Max Uses Per User:{" "}
+                      <strong>{coupon.maxUsesPerUser}</strong>
                     </p>
                   </div>
                   <div className="flex items-center gap-4">

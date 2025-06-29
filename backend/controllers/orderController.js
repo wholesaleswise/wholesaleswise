@@ -1,6 +1,7 @@
 import stripe from "../config/stripe.js";
 import UserModel from "../models/User.js";
 import orderModel from "../models/OrderModel.js";
+import Coupon from "../models/Coupon.js";
 
 import {
   ApiError,
@@ -63,8 +64,10 @@ function generateOrderEmailContent({
   paymentMethod,
   orderIdFormatted,
   orderDate,
+  couponCode = null,
+  couponDiscountPercent = null,
+  couponDiscountAmount = null,
 }) {
-  // TEXT VERSION
   const textCustomer = `
 ${websiteName}
 
@@ -88,6 +91,11 @@ ${cart
 
 Subtotal: AU$ ${subtotal.toFixed(2)}
 Discount: AU$ ${totalDiscount.toFixed(2)}
+${
+  couponCode
+    ? `Coupon Code Used: ${couponCode} (${couponDiscountPercent}% off, -AU$ ${couponDiscountAmount})`
+    : ""
+}
 Shipping Fee: AU$ ${deliveryCharge.toFixed(2)}
 Total Payable: AU$ ${totalAmount.toFixed(2)}
 
@@ -97,7 +105,6 @@ Thank you for shopping with us!
 Visit: ${websiteUrl}
 `;
 
-  // HTML VERSION
   const htmlCustomer = `
 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
   <h2 style="color: #007BFF;">${websiteName}</h2><br/>
@@ -106,12 +113,8 @@ Visit: ${websiteUrl}
   <p><strong>Customer Name:</strong> ${fullName}</p>
   <p><strong>Phone:</strong> ${phone}</p>
   <p><strong>Email:</strong> ${email}</p>
-  <p><strong>Shipping Address:</strong>
-    ${address}
-   </p>
-   <p><strong>Full Address:</strong>
-    ${city}, ${state}, ${zip}
-   </p>
+  <p><strong>Shipping Address:</strong> ${address}</p>
+  <p><strong>Full Address:</strong> ${city}, ${state}, ${zip}</p>
 
   <h4>Order Items:</h4>
   <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
@@ -121,7 +124,7 @@ Visit: ${websiteUrl}
         <th style="border: 1px solid #ddd; padding: 8px;">Qty</th>
         <th style="border: 1px solid #ddd; padding: 8px;">Price</th>
         <th style="border: 1px solid #ddd; padding: 8px;">Discount</th>
-        <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Total(with discount)</th>
       </tr>
     </thead>
     <tbody>
@@ -159,7 +162,12 @@ Visit: ${websiteUrl}
   <p style="margin-top: 20px;"><strong>Subtotal:</strong> AU$ ${subtotal.toFixed(
     2
   )}</p>
-  <p><strong>Total Discount:</strong> AU$ ${totalDiscount.toFixed(2)}</p>
+  ${
+    couponCode
+      ? `<p><strong>Coupon Code Used:</strong> ${couponCode} (${couponDiscountPercent}% off, -AU$ ${couponDiscountAmount})</p>`
+      : ""
+  }
+   <p><strong>Total Discount:</strong> AU$ ${totalDiscount.toFixed(2)}</p>
   <p><strong>Shipping Fee:</strong> AU$ ${deliveryCharge.toFixed(2)}</p>
   <p><strong>Total Payable:</strong> <strong>AU$ ${totalAmount.toFixed(
     2
@@ -171,105 +179,9 @@ Visit: ${websiteUrl}
 </div>
 `;
 
-  // TEXT VERSION
-  const textAdmin = `
-${websiteName}
+  const textAdmin = textCustomer;
+  const htmlAdmin = htmlCustomer;
 
-Order ID: ${orderIdFormatted}
-Order Date: ${orderDate}
-Customer Name: ${fullName}
-Phone: ${phone}
-Email: ${email}
-Shipping Address: ${address}
-Full Address: ${city}, ${state}, ${zip}.
-
-Order Items:
-${cart
-  .map((item) => {
-    const product = item.productId;
-    return `- ${product.productName} (Qty: ${
-      item.quantity
-    }) - AU$ ${product.productPrice.toFixed(2)}`;
-  })
-  .join("\n")}
-
-Subtotal: AU$ ${subtotal.toFixed(2)}
-Discount: AU$ ${totalDiscount.toFixed(2)}
-Shipping Fee: AU$ ${deliveryCharge.toFixed(2)}
-Total Payable: AU$ ${totalAmount.toFixed(2)}
-Payment Method: ${paymentMethod}
-`;
-
-  // HTML VERSION
-  const htmlAdmin = `
-<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-  <h2 style="color: #007BFF;">${websiteName}</h2><br/>
-  <p><strong>Order ID:</strong> ${orderIdFormatted}</p>
-  <p><strong>Order Date:</strong> ${orderDate}</p>
-  <p><strong>Customer Name:</strong> ${fullName}</p>
-  <p><strong>Phone:</strong> ${phone}</p>
-  <p><strong>Email:</strong> ${email}</p>
-  <p><strong>Shipping Address:</strong>
-    ${address}
-   </p>
-   <p><strong>Full Address:</strong>
-    ${city}, ${state}, ${zip}
-   </p>
-
-  <h4>Order Items:</h4>
-  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-    <thead>
-      <tr>
-        <th style="border: 1px solid #ddd; padding: 8px;">Item</th>
-        <th style="border: 1px solid #ddd; padding: 8px;">Qty</th>
-        <th style="border: 1px solid #ddd; padding: 8px;">Price</th>
-        <th style="border: 1px solid #ddd; padding: 8px;">Discount</th>
-        <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${cart
-        .map((item) => {
-          const product = item.productId;
-          const price = product.productPrice;
-          const discount = product.discount || 0;
-          const discountedPrice = price - (price * discount) / 100;
-          const total = discountedPrice * item.quantity;
-
-          return `
-        <tr>
-          <td style="border: 1px solid #ddd; padding: 8px; width: 240px">${
-            product.productName
-          }</td>
-          <td style="border: 1px solid #ddd; padding: 8px;">${
-            item.quantity
-          }</td>
-          <td style="border: 1px solid #ddd; padding: 8px;">AU$ ${price.toFixed(
-            2
-          )}</td>
-          <td style="border: 1px solid #ddd; padding: 8px;">${
-            discount ? discount + "%" : "-"
-          }</td>
-          <td style="border: 1px solid #ddd; padding: 8px;">AU$ ${total.toFixed(
-            2
-          )}</td>
-        </tr>`;
-        })
-        .join("")}
-    </tbody>
-  </table>
-
-  <p style="margin-top: 20px;"><strong>Subtotal:</strong> AU$ ${subtotal.toFixed(
-    2
-  )}</p>
-  <p><strong>Total Discount:</strong> AU$ ${totalDiscount.toFixed(2)}</p>
-  <p><strong>Shipping Fee:</strong> AU$ ${deliveryCharge.toFixed(2)}</p>
-  <p><strong>Total Payable:</strong> <strong>AU$ ${totalAmount.toFixed(
-    2
-  )}</strong></p>
-  <p><strong>Payment Method:</strong> ${paymentMethod}</p>
-</div>
-`;
   return { textCustomer, htmlCustomer, textAdmin, htmlAdmin };
 }
 
@@ -284,33 +196,61 @@ const createOrder = async ({
   userId,
   email,
   city,
+  couponCode,
 }) => {
   try {
     if (!Array.isArray(cart)) {
       throw new Error("Cart should be an array");
     }
 
-    // Calculate the total amount of the order
-    let discountedPrice = 0;
-    let totalAmount = 0;
+    // 1. Calculate subtotal from cart
+    let subtotal = 0;
     cart.forEach((item) => {
-      // Check if item has productPrice and quantity, and if productId has productPrice
       const product = item?.productId;
-      let itemTotal = 0;
       const discountAmount = (product?.productPrice * product?.discount) / 100;
-      discountedPrice = product?.productPrice - discountAmount;
-      if (discountedPrice === product?.productPrice) {
-        itemTotal = product?.productPrice * item.quantity;
-      } else {
-        itemTotal = discountedPrice * item.quantity;
-      }
-      totalAmount += itemTotal;
+      const discountedPrice = product?.productPrice - discountAmount;
+      subtotal += discountedPrice * item.quantity;
     });
 
-    // Add delivery charge
-    const deliveryCharge = address?.DeliveryCharge;
-    totalAmount += deliveryCharge;
+    // 2. Apply valid coupon
+    let couponDiscount = 0;
+    let validCoupon = null;
 
+    if (couponCode) {
+      const now = new Date();
+      const coupon = await Coupon.findOne({ code: couponCode });
+
+      if (
+        coupon &&
+        coupon.active &&
+        now >= coupon.startDate &&
+        now <= coupon.expiresAt
+      ) {
+        const totalUses = coupon.usedBy.reduce(
+          (sum, user) => sum + user.timesUsed,
+          0
+        );
+        const userUsage = coupon.usedBy.find(
+          (u) => u.userId.toString() === userId.toString()
+        );
+
+        if (
+          (coupon.maxUses === null || totalUses < coupon.maxUses) &&
+          (!userUsage || userUsage.timesUsed < coupon.maxUsesPerUser)
+        ) {
+          couponDiscount = (subtotal * coupon.discount) / 100;
+          validCoupon = coupon;
+        }
+      }
+    }
+
+    // 3. Delivery
+    const deliveryCharge = address?.DeliveryCharge || 0;
+
+    // 4. Final total
+    const totalAmount = subtotal - couponDiscount + deliveryCharge;
+
+    // 5. PayPal request payload
     const collect = {
       body: {
         intent: "CAPTURE",
@@ -344,6 +284,10 @@ const createOrder = async ({
     return {
       jsonResponse: orderDetails,
       httpStatusCode: httpResponse.statusCode,
+      subtotal,
+      couponDiscount,
+      deliveryCharge,
+      couponCode: validCoupon?.code || null,
     };
   } catch (error) {
     console.error("Error creating order:", error);
@@ -364,12 +308,15 @@ const captureOrder = async (
   fullName,
   email,
   city,
-  userId
+  userId,
+  couponCode
 ) => {
   const collect = {
     id: orderID,
     prefer: "return=minimal",
   };
+
+  console.log("Coupon code received:", couponCode);
 
   if (!Array.isArray(cart)) {
     throw new Error("Cart should be an array");
@@ -377,7 +324,10 @@ const captureOrder = async (
 
   let totalAmount = 0;
   let totalDiscount = 0;
+  let couponDiscount = 0;
+  let validCoupon = null;
 
+  // Calculate subtotal and total product discount
   cart.forEach((item) => {
     const product = item?.productId;
     const discountAmount =
@@ -389,9 +339,22 @@ const captureOrder = async (
     totalAmount += itemTotal;
   });
 
-  const deliveryCharge = address?.DeliveryCharge || 0;
   const subtotal = totalAmount;
-  totalAmount += deliveryCharge;
+
+  // Try to fetch and apply coupon (optional)
+  if (couponCode) {
+    const coupon = await Coupon.findOne({ code: couponCode });
+
+    if (coupon) {
+      couponDiscount = (subtotal * coupon.discount) / 100;
+      validCoupon = coupon;
+    } else {
+      console.warn("Coupon not found or invalid:", couponCode);
+    }
+  }
+
+  const deliveryCharge = address?.DeliveryCharge || 0;
+  totalAmount = subtotal - couponDiscount + deliveryCharge;
 
   try {
     const { body, ...httpResponse } = await ordersController.ordersCapture(
@@ -399,29 +362,20 @@ const captureOrder = async (
     );
     const orderDetails = JSON.parse(body);
 
-    if (!orderDetails?.id) {
-      throw new Error(
-        "Failed to capture order. No valid order details received."
-      );
+    if (!orderDetails?.id || orderDetails.status !== "COMPLETED") {
+      throw new Error("Payment not completed or invalid PayPal response");
     }
 
-    if (orderDetails.status !== "COMPLETED") {
-      throw new Error("Order capture failed. Payment not completed.");
-    }
-
-    // Generate order date and order ID
     const orderDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
 
-    // Fetch dynamic site info
     const siteInfo = await WebsiteInfoModel.findOne();
     const websiteName = siteInfo?.websiteName;
     const websiteUrl = process.env.FRONTEND_HOST;
 
-    // Save Order
     const newOrder = new orderModel({
       productDetails: cart,
       UserDetails: {
@@ -430,7 +384,7 @@ const captureOrder = async (
         email,
         phoneNumber: phone,
       },
-      totalAmount: totalAmount.toFixed(2),
+      totalAmount: Number(totalAmount.toFixed(2)),
       shippingAddress: {
         addressLine1: address.Address,
         city,
@@ -439,6 +393,17 @@ const captureOrder = async (
         shippingCharge: deliveryCharge,
         countryCode: "AU",
       },
+      couponDetails: validCoupon
+        ? {
+            code: validCoupon.code,
+            discount: validCoupon.discount,
+            discountAmount: Number(couponDiscount.toFixed(2)),
+          }
+        : {
+            code: null,
+            discount: 0,
+            discountAmount: 0,
+          },
       paymentDetails: {
         paymentId: orderDetails.id,
         payment_method_type: paymentMethod,
@@ -447,14 +412,11 @@ const captureOrder = async (
     });
 
     const saveOrder = await newOrder.save();
+    console.log("Order saved:", saveOrder);
 
-    if (saveOrder?._id) {
-      const {
-        textCustomer: customerEmailText,
-        htmlCustomer: customerEmailHtml,
-        textAdmin: adminEmailText,
-        htmlAdmin: adminEmailHtml,
-      } = generateOrderEmailContent({
+    // Send confirmation emails
+    const { textCustomer, htmlCustomer, textAdmin, htmlAdmin } =
+      generateOrderEmailContent({
         websiteName,
         websiteUrl,
         fullName,
@@ -467,49 +429,56 @@ const captureOrder = async (
         zip,
         deliveryCharge,
         subtotal,
-        totalDiscount,
+        totalDiscount: totalDiscount + couponDiscount,
         totalAmount,
         paymentMethod,
-        orderIdFormatted: saveOrder?._id,
+        orderIdFormatted: saveOrder._id,
         orderDate,
+        couponCode: validCoupon?.code || null,
+        couponDiscountPercent: validCoupon?.discount || null,
+        couponDiscountAmount: couponDiscount ? couponDiscount.toFixed(2) : null,
       });
-      // Send customer & admin emails
-      await sendEmail(
-        email,
-        "Order Confirmation",
-        customerEmailText,
-        customerEmailHtml
-      );
-      await sendEmail(
-        process.env.EMAIL_FROM,
-        "New Order Received",
-        adminEmailText,
-        adminEmailHtml
-      );
 
-      // Update product stock
-      await cartModel.deleteMany({ userId });
-      for (const item of cart) {
-        const productInDb = await ProductModel.findById(item.productId._id);
-        if (productInDb) {
-          if (productInDb.productTotalStockQty >= item.quantity) {
-            productInDb.productTotalStockQty -= item.quantity;
-            await productInDb.save();
-          } else {
-            throw new Error(
-              `Not enough stock for ${item.productId.productName}`
-            );
-          }
-        }
+    await sendEmail(email, "Order Confirmation", textCustomer, htmlCustomer);
+    await sendEmail(
+      process.env.EMAIL_FROM,
+      "New Order Received",
+      textAdmin,
+      htmlAdmin
+    );
+
+    await cartModel.deleteMany({ userId });
+
+    // Update product stock
+    for (const item of cart) {
+      const productInDb = await ProductModel.findById(item.productId._id);
+      if (productInDb && productInDb.productTotalStockQty >= item.quantity) {
+        productInDb.productTotalStockQty -= item.quantity;
+        await productInDb.save();
+      } else {
+        throw new Error(`Not enough stock for ${item.productId.productName}`);
       }
-
-      return {
-        jsonResponse: orderDetails,
-        httpStatusCode: httpResponse.statusCode,
-      };
     }
+
+    // Track coupon usage
+    if (validCoupon) {
+      const usage = validCoupon.usedBy.find(
+        (u) => u.userId.toString() === userId.toString()
+      );
+      if (usage) {
+        usage.timesUsed += 1;
+      } else {
+        validCoupon.usedBy.push({ userId, timesUsed: 1 });
+      }
+      await validCoupon.save();
+    }
+
+    return {
+      jsonResponse: orderDetails,
+      httpStatusCode: httpResponse.statusCode,
+    };
   } catch (error) {
-    console.error("Error during capture:", error);
+    console.error("Error during capture:", error.message);
     throw new Error("Failed to capture the order.");
   }
 };
@@ -527,34 +496,102 @@ class orderController {
         fullName,
         email,
         city,
+        couponCode,
       } = request.body;
 
       const { user } = request;
+      const userData = await UserModel.findById(user._id);
 
-      const userData = await UserModel.findOne({ _id: user?._id });
-      const cartIds = cart.map((item) => item._id);
-
-      // Validate cart items
       if (!cart || !Array.isArray(cart) || cart.length === 0) {
         return response.status(400).json({
-          message: "Invalid or empty cart items.",
+          message: "Invalid cart",
           error: true,
-          success: false,
         });
       }
 
       const deliveryCharge = address?.DeliveryCharge;
-
       if (!deliveryCharge) {
         return response.status(400).json({
-          message: "Delivery charge is missing.",
+          message: "Missing delivery charge",
           error: true,
-          success: false,
         });
       }
 
-      // Prepare Stripe session parameters
-      const params = {
+      let subtotal = 0;
+      let totalDiscount = 0;
+
+      const lineItems = cart.map((item) => {
+        const product = item.productId;
+        const discountAmount =
+          (product.productPrice * (product.discount || 0)) / 100;
+        const priceAfterDiscount = product.productPrice - discountAmount;
+
+        subtotal += priceAfterDiscount * item.quantity;
+        totalDiscount += discountAmount * item.quantity;
+
+        return {
+          price_data: {
+            currency: "aud",
+            product_data: {
+              name: product.productName,
+              images: product.productImageUrls,
+              metadata: {
+                productId: product._id.toString(),
+              },
+            },
+            unit_amount: Math.round(priceAfterDiscount * 100),
+          },
+          quantity: item.quantity,
+        };
+      });
+
+      let couponDiscount = 0;
+      let discount = 0;
+      let stripePromotionCodeId = null;
+
+      if (couponCode) {
+        const coupon = await Coupon.findOne({ code: couponCode });
+
+        if (!coupon) {
+          return response
+            .status(400)
+            .json({ message: "Invalid coupon", error: true });
+        }
+
+        if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+          return response
+            .status(400)
+            .json({ message: "Coupon usage limit exceeded", error: true });
+        }
+
+        couponDiscount = (subtotal * coupon.discount) / 100;
+        discount = coupon.discount;
+
+        // Create a Stripe coupon
+        const stripeCoupon = await stripe.coupons.create({
+          percent_off: coupon.discount,
+          duration: "once",
+          name: `Code: ${coupon.code}`,
+        });
+
+        const promoCodePayload = {
+          coupon: stripeCoupon.id,
+          code: coupon.code,
+        };
+
+        if (coupon.usageLimit && Number.isInteger(coupon.usageLimit)) {
+          promoCodePayload.max_redemptions = coupon.usageLimit;
+        }
+
+        const stripePromo = await stripe.promotionCodes.create(
+          promoCodePayload
+        );
+        stripePromotionCodeId = stripePromo.id;
+      }
+
+      const totalAmount = subtotal + deliveryCharge - couponDiscount;
+
+      const session = await stripe.checkout.sessions.create({
         submit_type: "pay",
         mode: "payment",
         payment_method_types: ["card"],
@@ -564,7 +601,7 @@ class orderController {
             shipping_rate_data: {
               type: "fixed_amount",
               fixed_amount: {
-                amount: deliveryCharge * 100,
+                amount: Math.round(deliveryCharge * 100),
                 currency: "aud",
               },
               display_name: "Shipping Charge",
@@ -573,78 +610,44 @@ class orderController {
         ],
         customer_email: email,
         metadata: {
-          cart_ids: JSON.stringify(cartIds),
-          userId: userData._id.toString(),
-          fullName: fullName,
-          email: email,
-          phone: phone,
+          cart_ids: JSON.stringify(cart.map((item) => item._id)),
+          userId: user._id.toString(),
+          fullName,
+          email,
+          phone,
+          paymentMethod,
+          couponCode: couponCode || "",
+          discount: discount || "",
+          couponDiscount: couponDiscount.toFixed(2),
           shippingAddress: JSON.stringify({
             addressLine1: address?.Address,
-            city: city,
-            state: state,
+            city,
+            state,
             postalCode: zip,
             shippingCharge: deliveryCharge,
             countryCode: "AU",
           }),
-          paymentMethod: paymentMethod,
+          totalAmount: totalAmount.toFixed(2),
         },
-        line_items: cart.map((item) => {
-          const product = item?.productId;
-          const discountAmount =
-            (product?.productPrice * product?.discount) / 100;
-          const discountedPrice = product?.productPrice - discountAmount;
-
-          if (
-            !product ||
-            !product.productName ||
-            !product.productImageUrls ||
-            !Array.isArray(product.productImageUrls) ||
-            product.productImageUrls.length === 0 ||
-            !product.productPrice ||
-            !item.quantity
-          ) {
-            console.error("Invalid product data in cart item:", item);
-            throw new Error("Invalid product data");
-          }
-
-          return {
-            price_data: {
-              currency: "aud",
-              product_data: {
-                name: product.productName,
-                images: product.productImageUrls,
-                metadata: {
-                  productId: product._id.toString(),
-                },
-              },
-              unit_amount: Math.round(
-                (discountedPrice === product?.productPrice
-                  ? product.productPrice
-                  : discountedPrice) * 100
-              ),
-            },
-            quantity: item.quantity,
-          };
-        }),
-        // ✅ Stripe will replace {CHECKOUT_SESSION_ID} automatically
+        line_items: lineItems,
+        discounts: stripePromotionCodeId
+          ? [{ promotion_code: stripePromotionCodeId }]
+          : [],
         success_url: `${process.env.FRONTEND_HOST}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.FRONTEND_HOST}/products`,
-      };
+      });
 
-      // Create Stripe Checkout Session
-      const session = await stripe.checkout.sessions.create(params);
-
-      // Return session to frontend
       return response.status(303).json(session);
     } catch (error) {
       console.error("Error creating Stripe checkout session:", error);
       return response.status(500).json({
-        message: error?.message || "An error occurred during checkout.",
+        message: error.message || "Stripe checkout error",
         error: true,
         success: false,
       });
     }
   };
+
   static CheckOrderStatus = async (req, res) => {
     const sessionId = req.query.session_id;
     console.log(sessionId);
@@ -672,7 +675,6 @@ class orderController {
 
   static webhooks = async (request, response) => {
     const sig = request.headers["stripe-signature"];
-
     const endpointSecret = process.env.STRIPE_ENPOINT_WEBHOOK_SECRET_KEY;
 
     let event;
@@ -683,10 +685,13 @@ class orderController {
       console.error("Webhook Error:", err.message);
       return response.status(400).send(`Webhook Error: ${err.message}`);
     }
+
     try {
       switch (event.type) {
         case "checkout.session.completed":
           const session = event.data.object;
+
+          // Fetch the cart items for this user
           const cartItems = await cartModel
             .find({ userId: session.metadata.userId })
             .populate({
@@ -699,9 +704,9 @@ class orderController {
               },
             });
 
-          const shippingAddress = JSON.parse(
-            session?.metadata?.shippingAddress
-          );
+          const shippingAddress = JSON.parse(session.metadata.shippingAddress);
+
+          // Calculate subtotal and totalDiscount from cart
           let subtotal = 0;
           let totalDiscount = 0;
           cartItems.forEach((item) => {
@@ -716,7 +721,7 @@ class orderController {
             totalDiscount += discountAmount * item.quantity;
           });
 
-          const totalAmount = subtotal + (shippingAddress.shippingCharge || 0);
+          // Map products for orderDetails
           const product = cartItems.map((item) => ({
             _id: item._id,
             userId: item.userId,
@@ -736,6 +741,20 @@ class orderController {
             quantity: item.quantity,
           }));
 
+          // Build couponDetails properly
+          const couponDetails = session.metadata.couponCode
+            ? {
+                code: session.metadata.couponCode,
+                discount: Number(session.metadata.discount) || 0, // percent discount from metadata
+                discountAmount: Number(session.metadata.couponDiscount) || 0, // amount discount from metadata
+              }
+            : {
+                code: null,
+                discount: 0,
+                discountAmount: 0,
+              };
+
+          // Build order details with coupon info
           const orderDetails = {
             productDetails: product,
             UserDetails: {
@@ -750,26 +769,27 @@ class orderController {
               payment_method_type: session.metadata.paymentMethod,
               payment_status: session.payment_status,
             },
-            shippingAddress: JSON.parse(session.metadata.shippingAddress),
+            shippingAddress: shippingAddress,
+            couponDetails,
             totalAmount: session.amount_total / 100,
           };
+
+          // If payment successful, save order, update stock, update coupon usage, clear cart, and send emails
           if (session.payment_status === "paid") {
+            // Save order
             const order = new orderModel(orderDetails);
             const saveOrder = await order.save();
 
+            // Update stock quantities for each product
             for (let item of cartItems) {
               const productInCart = item.productId;
-              // Check if the product exists in the database
               const productInDb = await ProductModel.findById(
                 productInCart._id
               );
-              if (productInDb) {
-                // Check if the ordered quantity does not exceed the stock
-                if (item.quantity <= productInDb.productTotalStockQty) {
-                  // Reduce the stock by the ordered quantity
-                  productInDb.productTotalStockQty -= item.quantity;
 
-                  // Save the updated product stock quantity
+              if (productInDb) {
+                if (item.quantity <= productInDb.productTotalStockQty) {
+                  productInDb.productTotalStockQty -= item.quantity;
                   await productInDb.save();
                 } else {
                   console.log(
@@ -778,98 +798,92 @@ class orderController {
                 }
               } else {
                 console.log(
-                  `Product with ID ${productInCart._id} not found in the database.`
+                  `Product with ID ${productInCart._id} not found in DB.`
                 );
               }
             }
 
+            // Update coupon usage count if coupon applied
+            if (couponDetails.code) {
+              await CouponModel.updateOne(
+                { code: couponDetails.code },
+                { $inc: { usedCount: 1 } }
+              );
+            }
+
+            // Format order date for email
             const orderDate = new Date().toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             });
 
-            // Fetch dynamic site info
+            // Get website info for email templates
             const siteInfo = await WebsiteInfoModel.findOne();
             const websiteName = siteInfo?.websiteName;
             const websiteUrl = process.env.FRONTEND_HOST;
 
-            const {
-              textCustomer: customerEmailText,
-              htmlCustomer: customerEmailHtml,
-              textAdmin: adminEmailText,
-              htmlAdmin: adminEmailHtml,
-            } = generateOrderEmailContent({
-              websiteName,
-              websiteUrl,
-              fullName: session.metadata.fullName,
-              email: session.customer_email,
-              phone: session.metadata.phone,
-              cart: cartItems,
-              address: shippingAddress?.addressLine1,
-              city: shippingAddress?.city,
-              state: shippingAddress?.state,
-              zip: shippingAddress?.postalCode,
-              deliveryCharge: shippingAddress?.shippingCharge,
-              subtotal,
-              totalDiscount,
-              totalAmount,
-              paymentMethod: session.metadata.paymentMethod,
-              orderIdFormatted: saveOrder?._id,
-              orderDate,
-            });
+            // Generate email content
+            const { textCustomer, htmlCustomer, textAdmin, htmlAdmin } =
+              generateOrderEmailContent({
+                websiteName,
+                websiteUrl,
+                fullName: session.metadata.fullName,
+                email: session.customer_email,
+                phone: session.metadata.phone,
+                cart: cartItems,
+                address: shippingAddress.addressLine1,
+                city: shippingAddress.city,
+                state: shippingAddress.state,
+                zip: shippingAddress.postalCode,
+                deliveryCharge: shippingAddress.shippingCharge,
+                subtotal,
+                totalDiscount,
+                totalAmount: orderDetails.totalAmount,
+                paymentMethod: session.metadata.paymentMethod,
+                orderIdFormatted: saveOrder?._id,
+                orderDate,
+                couponCode: couponDetails.code || null,
+                couponDiscount: couponDetails.discountAmount || 0,
+              });
 
-            // Send email to the customer
+            // Send confirmation emails
             await sendEmail(
               session.customer_email,
               "Order Confirmation",
-              customerEmailText,
-              customerEmailHtml
-            );
-
-            // Send email to the admin
-            await sendEmail(
-              process.env.EMAIL_FROM,
-              "New Order Received",
-              adminEmailText,
-              adminEmailHtml
-            );
-
-            // Send email to the customer
-
-            await sendEmail(
-              email,
-              "Order Confirmation",
-              customerEmailText,
-              customerEmailHtml
+              textCustomer,
+              htmlCustomer
             );
 
             await sendEmail(
               process.env.EMAIL_FROM,
               "New Order Received",
-              adminEmailText,
-              adminEmailHtml
+              textAdmin,
+              htmlAdmin
             );
+
+            // Clear user's cart after order placed
             if (saveOrder?._id) {
               await cartModel.deleteMany({ userId: session.metadata.userId });
             }
-            break;
           }
+          break;
 
         default:
           console.log(`Unhandled event type ${event.type}`);
       }
     } catch (error) {
-      response.status(500).send({
-        success: false,
-        message: error.message || "Error in updating product",
-      });
       console.error("Error processing webhook:", error);
+      return response.status(500).send({
+        success: false,
+        message: error.message || "Error processing webhook",
+      });
     }
 
+    // Send success response to Stripe
     response.status(200).send({
       success: true,
-      message: "Payment SuccessFull!!",
+      message: "Payment processed successfully",
     });
   };
 
@@ -886,6 +900,7 @@ class orderController {
         fullName,
         email,
         city,
+        couponCode,
       } = req.body;
 
       const userId = req?.user?._id;
@@ -906,6 +921,7 @@ class orderController {
         email,
         city,
         userId,
+        couponCode,
       });
       res.status(httpStatusCode).json(jsonResponse);
     } catch (error) {
@@ -927,6 +943,7 @@ class orderController {
         fullName,
         email,
         city,
+        couponCode,
       } = req.body;
 
       const userId = req?.user?._id;
@@ -942,7 +959,8 @@ class orderController {
         fullName,
         email,
         city,
-        userId
+        userId,
+        couponCode
       );
       res
         .status(httpStatusCode)

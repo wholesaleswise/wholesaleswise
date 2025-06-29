@@ -245,3 +245,28 @@ export const AboutValidationSchema = Yup.object({
     .required("Content is required")
     .min(20, "Content must be at least 20 characters"),
 });
+
+export const couponSchema = Yup.object({
+  code: Yup.string().required("Coupon code is required"),
+  discount: Yup.number()
+    .typeError("Discount must be a number")
+    .min(1, "Minimum discount is 1%")
+    .max(100, "Maximum discount is 100%")
+    .required("Discount is required"),
+  startDate: Yup.date().required("Start date and time is required"),
+  expiresAt: Yup.date()
+    .min(Yup.ref("startDate"), "Expiry date must be after the start date")
+    .required("Expiry date and time is required"),
+  maxUses: Yup.number()
+    .nullable()
+    .transform((value, originalValue) =>
+      originalValue.trim() === "" ? null : Number(originalValue)
+    )
+    .min(1, "Must be at least 1")
+    .notRequired(),
+  maxUsesPerUser: Yup.number()
+    .typeError("Max uses per user must be a number")
+    .min(1, "Must be at least 1")
+    .required("Max uses per user is required"),
+  active: Yup.boolean(),
+});

@@ -156,9 +156,11 @@ const Checkout = () => {
       zip: "",
       address: null,
       paymentMethod: "",
+      couponCode: "",
     },
     validationSchema: checkoutValidationSchema,
     onSubmit: async (values) => {
+      console.log(values)
       if (values.paymentMethod === "stripe") {
         if (total < 150) {
           toast.error("At least AU$150 is required to proceed.");
@@ -192,13 +194,13 @@ const Checkout = () => {
 
     try {
       const { data, error } = await applyCoupon(couponCode);
-      console.log(data);
       if (error) {
         setCouponError(error?.data?.message || "Invalid or expired coupon");
         setAppliedCoupon(null);
       } else {
         setAppliedCoupon(data);
         setCouponError("");
+        formik.setFieldValue("couponCode", data.code);
         toast.success(`Coupon ${data.code} applied!`);
       }
     } catch (err) {
@@ -223,16 +225,15 @@ const Checkout = () => {
 
   const totalAmount = calculateTotal();
   const SubTotal = totalAmount?.toFixed(2);
-  const discountAmount = (
-    (Number(SubTotal) * appliedCoupon?.discount) /
-    100
+  const discountAmount = appliedCoupon
+    ? ((Number(SubTotal) * appliedCoupon.discount) / 100).toFixed(2)
+    : "0.00";
+  const total = (
+    Number(SubTotal) -
+    Number(discountAmount) +
+    Number(shipping)
   ).toFixed(2);
-
-  const total = (Number(SubTotal) - discountAmount + Number(shipping)).toFixed(
-    2
-  );
-  // const total = (Number(SubTotal) + Number(shipping)).toFixed(2);
-
+  console.log(formik.values);
   return (
     <div className=" w-full container mx-auto md:p-4 py-8">
       <div className="px-4 py-4">

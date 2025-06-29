@@ -38,7 +38,11 @@ const orderSchema = new mongoose.Schema(
         default: "AU",
       },
     },
-
+    couponDetails: {
+      code: { type: String, default: null },
+      discount: { type: Number, default: 0 },
+      discountAmount: { type: Number, default: 0 },
+    },
     totalAmount: {
       type: Number,
       default: 0,
