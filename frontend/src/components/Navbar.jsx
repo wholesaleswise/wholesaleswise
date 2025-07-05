@@ -537,6 +537,8 @@ const Navbar = () => {
           >
             <div
               data-aos="fade-left"
+              data-aos-duration="200"
+              data-aos-delay="0"
               className="fixed right-0 top-0 h-full w-60 flex flex-col justify-between overflow-y-auto z-50 bg-gray-100 px-5  py-6 shadow-lg"
             >
               {/* Header: Logo and Close */}

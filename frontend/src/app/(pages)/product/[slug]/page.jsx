@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { FaEdit } from "react-icons/fa";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Share2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -36,6 +36,22 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  PinterestShareButton,
+  PinterestIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+} from "react-share";
 import CategroyWiseProductDisplay from "@/components/CategroyWiseProductDisplay";
 
 const Modal = ({ isOpen, onClose, children }) => {
@@ -61,6 +77,10 @@ const Modal = ({ isOpen, onClose, children }) => {
 
 const SingleProduct = ({ slug }) => {
   const router = useRouter();
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareRef = useRef();
+
   const {
     data: singleProductData,
     error: getsingleProductErrorDetails,
@@ -327,6 +347,22 @@ const SingleProduct = ({ slug }) => {
     ]
   );
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareRef.current && !shareRef.current.contains(event.target)) {
+        setShowShareOptions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const title = `Check out this product: ${productData?.productName}`;
+  const shareImage = productData?.productImageUrls?.[0];
+
   if (isLoading) {
     return <Loading />;
   }
@@ -349,28 +385,79 @@ const SingleProduct = ({ slug }) => {
   return (
     <div className="container  p-4 mx-auto">
       <div>
-        <div className="py-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink>
-                  <Link href="/">Home</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink>
-                  <Link href="/products">Products</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{productData?.productName}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+        <div className="pt-4 flex gap-5 justify-between">
+          <div>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink>
+                    <Link href="/">Home</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink>
+                    <Link href="/products">Products</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{productData?.productName}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <div className="relative mb-6 " ref={shareRef}>
+            <Button
+              variant="outline"
+              className="bg-gray-100 float-right "
+              onClick={() => setShowShareOptions((prev) => !prev)}
+            >
+              <Share2 />
+            </Button>
+
+            {showShareOptions && (
+              <div className="absolute right-0 top-10 z-50 bg-white p-3 rounded-md border shadow-md flex flex-wrap gap-3 w-[300px]">
+                <FacebookShareButton url={shareUrl} quote={title}>
+                  <FacebookIcon size={32} round />
+                </FacebookShareButton>
+
+                <WhatsappShareButton url={shareUrl} title={title}>
+                  <WhatsappIcon size={32} round />
+                </WhatsappShareButton>
+
+                <TwitterShareButton url={shareUrl} title={title}>
+                  <TwitterIcon size={32} round />
+                </TwitterShareButton>
+
+                <TelegramShareButton url={shareUrl} title={title}>
+                  <TelegramIcon size={32} round />
+                </TelegramShareButton>
+
+                <EmailShareButton
+                  url={shareUrl}
+                  subject={title}
+                  body="Check this product out!"
+                >
+                  <EmailIcon size={32} round />
+                </EmailShareButton>
+
+                <PinterestShareButton url={shareUrl} media={shareImage || ""}>
+                  <PinterestIcon size={32} round />
+                </PinterestShareButton>
+
+                <LinkedinShareButton
+                  url={shareUrl}
+                  title={title}
+                  summary={title}
+                >
+                  <LinkedinIcon size={32} round />
+                </LinkedinShareButton>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="  border-black py-4 m-2">
+        <div className=" relative border-black pb-4 m-2">
           {/* Product Image Section */}
           <div className="min-h-[200px] flex flex-col  lg:flex-row gap-8 lg:gap-14  md:pt-4">
             <div className=" flex flex-col gap-4">
