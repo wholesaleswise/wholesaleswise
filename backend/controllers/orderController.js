@@ -551,7 +551,7 @@ class orderController {
         discount = 0,
         stripePromotionCodeId = null;
       if (couponCode) {
-        const coupon = await CouponModel.findOne({ code: couponCode });
+        const coupon = await Coupon.findOne({ code: couponCode });
         if (coupon) {
           discount = coupon.discount;
           couponDiscount = (subtotal * discount) / 100;
@@ -756,7 +756,7 @@ class orderController {
 
           // Track coupon usage if coupon applied
           if (couponDetails.code) {
-            const validCoupon = await CouponModel.findOne({
+            const validCoupon = await Coupon.findOne({
               code: couponDetails.code,
             });
 
