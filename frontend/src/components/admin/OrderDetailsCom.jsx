@@ -56,8 +56,11 @@ const OrderDetailsCom = ({ order, id }) => {
     totalAmount,
     createdAt,
     orderStatus,
+    couponDetails = {},
   } = order;
   const shippingCharge = shippingAddress.shippingCharge;
+  const couponCode = couponDetails?.code;
+  const couponDiscount = couponDetails?.discountAmount || 0;
 
   const handleStatusChange = async (id) => {
     if (id) {
@@ -97,13 +100,11 @@ const OrderDetailsCom = ({ order, id }) => {
           </Button>
         </div>
 
-        {/* Printable Area */}
         <div
           id="order-details"
           ref={componentRef}
           className="print:bg-white print:p-4"
         >
-          {/* Header */}
           <header className="flex flex-col md:flex-row md:justify-between gap-4 pb-6 border-b border-gray-200">
             <div>
               <h1 className="text-lg md:text-xl font-semibold">
@@ -123,9 +124,7 @@ const OrderDetailsCom = ({ order, id }) => {
             </div>
           </header>
 
-          {/* Info Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 py-6 border-b border-gray-200">
-            {/* Billing Info */}
             <div>
               <h3 className="text-lg font-semibold mb-3">
                 Billing Information
@@ -142,7 +141,6 @@ const OrderDetailsCom = ({ order, id }) => {
               </p>
             </div>
 
-            {/* Shipping Info */}
             <div>
               <h3 className="text-lg font-semibold mb-3">Shipping Address</h3>
               <p className="text-sm">
@@ -156,13 +154,12 @@ const OrderDetailsCom = ({ order, id }) => {
               </p>
             </div>
 
-            {/* Payment Info */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Payment & Status</h2>
               <div className="text-sm font-medium">
                 <p>Payment ID: {paymentDetails?.paymentId}</p>
                 <p>
-                  Payment Method:
+                  Payment Method:{" "}
                   <span
                     className={`ml-1 font-semibold ${
                       paymentDetails?.payment_method_type?.[0] === "paypal"
@@ -174,7 +171,7 @@ const OrderDetailsCom = ({ order, id }) => {
                   </span>
                 </p>
                 <p>
-                  Payment Status:
+                  Payment Status:{" "}
                   <span
                     className={`ml-1 font-semibold ${
                       paymentDetails?.payment_status === "succeeded"
@@ -186,26 +183,33 @@ const OrderDetailsCom = ({ order, id }) => {
                   </span>
                 </p>
                 <p>
-                  Order Status:
+                  Order Status:{" "}
                   <span
                     className={`ml-1 font-semibold ${
-                      orderStatus === "Delivered"
+                      orderStatus?.[0] === "Delivered"
                         ? "text-green-600"
-                        : orderStatus === "Shipped"
+                        : orderStatus?.[0] === "Shipped"
                         ? "text-blue-500"
-                        : orderStatus === "Processing"
+                        : orderStatus?.[0] === "Processing"
                         ? "text-yellow-500"
                         : "text-red-500"
                     }`}
                   >
-                    {orderStatus}
+                    {orderStatus?.[0]}
                   </span>
                 </p>
+                {couponCode && (
+                  <p>
+                    Coupon Used:{" "}
+                    <span className="ml-1 font-semibold text-indigo-600">
+                      {couponCode}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
           </section>
 
-          {/* Product Table */}
           <section className="py-4 border-gray-200">
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
             <div className="overflow-x-auto">
@@ -218,7 +222,9 @@ const OrderDetailsCom = ({ order, id }) => {
                     {productDetails.some((p) => p.productId?.discount > 0) && (
                       <th className="px-4 py-3 font-semibold">Discount</th>
                     )}
-                    <th className="px-4 py-3 font-semibold">Total</th>
+                    <th className="px-4 py-3 font-semibold">
+                      Total (with discount)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,7 +237,6 @@ const OrderDetailsCom = ({ order, id }) => {
                       SKU,
                       productPrice,
                     } = item.productId;
-
                     const discountAmount = (productPrice * discount) / 100;
                     const discountedPrice = productPrice - discountAmount;
                     const itemTotal = discountedPrice * item.quantity;
@@ -289,9 +294,29 @@ const OrderDetailsCom = ({ order, id }) => {
                       Subtotal:
                     </td>
                     <td className="px-4 py-3 font-semibold">
-                      AU$ {(totalAmount - shippingCharge).toFixed(2)}
+                      AU${" "}
+                      {(totalAmount - shippingCharge + couponDiscount).toFixed(
+                        2
+                      )}
                     </td>
                   </tr>
+                  {couponDiscount > 0 && (
+                    <tr>
+                      <td
+                        colSpan={
+                          productDetails.some((p) => p.productId.discount > 0)
+                            ? 4
+                            : 3
+                        }
+                        className="px-4 py-3 font-semibold"
+                      >
+                        Coupon Discount:
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-red-600">
+                        -AU$ {couponDiscount.toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
                   <tr>
                     <td
                       colSpan={
@@ -327,7 +352,6 @@ const OrderDetailsCom = ({ order, id }) => {
             </div>
           </section>
 
-          {/* Footer */}
           <footer className="py-4 text-center text-sm">
             Thank you for shopping with us!
           </footer>

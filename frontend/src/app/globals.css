@@ -42,8 +42,14 @@
     background-color: #e25700; /* Darker orange for hover */
   }
 
-  .bg-card {
-    background-color: #ffffff; /* Card white */
+  .bg-table {
+    background-color: #003c7a;
+  }
+  .bg-hoverTable {
+    background-color: #255394;
+  }
+  .bg-secondaryTable {
+    background-color: #e2e8f0;
   }
 
   /* Borders */

@@ -8,10 +8,10 @@ const router = express.Router();
 
 router.get("/", CouponController.getAllCoupons);
 router.get("/:id", CouponController.getCouponById);
-router.post("/apply", CouponController.applyCoupon);
 
 router.use(accessTokenAutoRefresh);
 router.use(passport.authenticate("jwt", { session: false }));
+router.post("/apply", CouponController.applyCoupon);
 router.use(isAdmin);
 
 router.post("/", CouponController.createCoupon);

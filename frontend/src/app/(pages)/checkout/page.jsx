@@ -160,28 +160,37 @@ const Checkout = () => {
     },
     validationSchema: checkoutValidationSchema,
     onSubmit: async (values) => {
-      console.log(values)
+      console.log(values);
       if (values.paymentMethod === "stripe") {
         if (total < 150) {
           toast.error("At least AU$150 is required to proceed.");
           return;
         }
-        const stripePromise = await loadStripe(
-          `${process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY}`
-        );
-        const res = await addToOrderStripe(values);
 
-        if (res?.error.data?.id) {
-          await stripePromise.redirectToCheckout({
-            sessionId: res?.error.data?.id,
-          });
-        } else {
-          alert("Stripe payment failed: invalid session ID");
+        const stripePromise = await loadStripe(
+          process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+        );
+
+        try {
+          const res = await addToOrderStripe(values); // likely an Axios call
+
+          console.log("Stripe session response:", res);
+
+          const sessionId = res?.error?.data?.id;
+          if (sessionId) {
+            await stripePromise.redirectToCheckout({ sessionId });
+          } else {
+            toast.error("Failed to create Stripe session.");
+          }
+        } catch (error) {
+          console.error("Stripe payment error:", error);
+          toast.error(
+            error?.response?.data?.message ||
+              "Something went wrong with Stripe!"
+          );
         }
-        console.log("Stripe payment", values);
-        // Integrate Stripe payment processing logic here
       } else {
-        alert("Please select a payment method.");
+        toast.error("Please select a payment method.");
       }
     },
   });

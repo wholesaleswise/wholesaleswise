@@ -151,7 +151,7 @@ const CategoryList = () => {
         <div className="w-[90%] mx-auto flex flex-col justify-center">
           <Table className="min-w-max" data-aos="fade-right">
             <TableHeader>
-              <TableRow className="uppercase text-sm bg-primary hover:bg-hover">
+              <TableRow className="uppercase text-sm bg-table hover:bg-hoverTable">
                 <TableHead className="text-white">Category Image</TableHead>
                 <TableHead className="text-white">Category Name</TableHead>
 
@@ -161,7 +161,10 @@ const CategoryList = () => {
             </TableHeader>
             <TableBody className="capitalize">
               {currentCategories.map((category) => (
-                <TableRow key={category._id}>
+                <TableRow
+                  key={category._id}
+                  className="hover:bg-secondaryTable"
+                >
                   <TableCell>
                     {/* Display Category Image */}
                     <img
@@ -182,14 +185,14 @@ const CategoryList = () => {
                           ).toLowerCase();
                           handleEdit(slug);
                         }}
-                        className="bg-blue-500 flex gap-1 items-center text-white px-2 py-1 rounded hover:bg-blue-600"
+                        className="bg-table hover:bg-hoverTable flex gap-1 items-center text-white px-2 py-1 rounded "
                       >
                         <FaEdit />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(category?._id)}
-                        className="bg-red flex items-center gap-1 text-white px-2 py-1 rounded hover:bg-red-600"
+                        className="bg-red-700 flex items-center gap-1 text-white px-2 py-1 rounded hover:bg-red-800"
                       >
                         <Trash2 style={{ width: "15px", height: "15px" }} />
                         Delete

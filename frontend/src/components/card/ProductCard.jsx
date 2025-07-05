@@ -33,10 +33,9 @@ const Product = ({ product }) => {
         toast.error("Please log in to add to cart.");
       } else {
         const res = await addToCart({ id, userId: user?.id });
-        if (res?.data || status?.isSuccess) {
+        if (res?.data?.status === "success") {
           toast.success(res?.data?.message);
-          console.log(res?.data?.message);
-        } else if (status?.isError || res?.error) {
+        } else if (res?.error?.data) {
           toast.error(res?.error?.data?.message);
         }
       }

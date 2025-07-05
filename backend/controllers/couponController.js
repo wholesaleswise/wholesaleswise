@@ -1,4 +1,5 @@
 import Coupon from "../models/Coupon.js";
+import orderModel from "../models/OrderModel.js";
 
 class CouponController {
   static createCoupon = async (req, res) => {
@@ -97,9 +98,16 @@ class CouponController {
 
   static applyCoupon = async (req, res) => {
     const { code } = req.body;
-    const userId = req.user?._id; 
+    const userId = req.user?._id;
 
     try {
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: login required" });
+      }
+
+      // Find coupon by code
       const coupon = await Coupon.findOne({ code });
 
       if (!coupon) {
@@ -114,47 +122,44 @@ class CouponController {
       if (now < coupon.startDate) {
         return res.status(400).json({ message: "Coupon is not active yet" });
       }
-
       if (now > coupon.expiresAt) {
         return res.status(400).json({ message: "Coupon expired" });
       }
 
-      // Check global usage
-      const totalUses = coupon.usedBy.reduce(
-        (sum, user) => sum + user.timesUsed,
-        0
-      );
-      if (coupon.maxUses !== null && totalUses >= coupon.maxUses) {
+      // Check global usage limit (maxUses)
+      // Count how many orders used this coupon in total
+      const totalUsedCount = await orderModel.countDocuments({
+        "couponDetails.code": code,
+      });
+      if (coupon.maxUses !== null && totalUsedCount >= coupon.maxUses) {
         return res.status(400).json({ message: "Coupon usage limit reached" });
       }
 
-      // Check per-user usage
-      const userUsage = coupon.usedBy.find(
-        (u) => u.userId.toString() === userId?.toString()
-      );
-      if (userUsage && userUsage.timesUsed >= coupon.maxUsesPerUser) {
+      // Check per-user usage limit (maxUsesPerUser)
+      // Count how many orders this user placed with this coupon
+      const userUsedCount = await orderModel.countDocuments({
+        "UserDetails.userId": userId.toString(),
+        "couponDetails.code": code,
+      });
+      console.log(totalUsedCount, userUsedCount);
+      if (
+        coupon.maxUsesPerUser !== null &&
+        userUsedCount >= coupon.maxUsesPerUser
+      ) {
         return res.status(400).json({
           message:
             "You have already used this coupon the maximum number of times",
         });
       }
 
-      // If all checks pass, update usage
-      if (userId) {
-        if (userUsage) {
-          userUsage.timesUsed += 1;
-        } else {
-          coupon.usedBy.push({ userId, timesUsed: 1 });
-        }
-        await coupon.save();
-      }
-
+      // If all checks pass, return success and discount info
       return res.status(200).json({
-        message: "Coupon valid",
+        message: "Coupon is valid",
         discount: coupon.discount,
         code: coupon.code,
       });
     } catch (error) {
+      console.error("Error applying coupon:", error);
       return res.status(500).json({ message: "Error applying coupon", error });
     }
   };

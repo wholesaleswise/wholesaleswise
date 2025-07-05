@@ -165,7 +165,7 @@ const UserTable = () => {
         <div className="max-w-full overflow-x-auto">
           <Table className="min-w-max w-full" data-aos="zoom-in">
             <TableHeader>
-              <TableRow className="uppercase text-base bg-primary hover:bg-hover">
+              <TableRow className="uppercase text-base bg-table hover:bg-hoverTable">
                 <TableHead className="text-white">User ID</TableHead>
                 <TableHead className="text-white">User Name</TableHead>
                 <TableHead className="text-white">User Email</TableHead>
@@ -179,7 +179,7 @@ const UserTable = () => {
               {currentUsers
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((user, key) => (
-                  <TableRow key={key} className=" hover:bg-secondary">
+                  <TableRow key={key} className=" hover:bg-secondaryTable">
                     <TableCell>{user?._id}</TableCell>
                     <TableCell>{user?.name}</TableCell>
                     <TableCell>{user?.email}</TableCell>
@@ -218,7 +218,7 @@ const UserTable = () => {
                       <div className="flex items-center space-x-3.5">
                         <Button
                           onClick={() => handleEdit(user)}
-                          className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="px-3 py-1 rounded text-white bg-table hover:bg-hoverTable disabled:opacity-50"
                           disabled={isUpdating}
                         >
                           Edit

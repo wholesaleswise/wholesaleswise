@@ -501,33 +501,36 @@ class orderController {
 
       const { user } = request;
       const userData = await UserModel.findById(user._id);
-
-      if (!cart || !Array.isArray(cart) || cart.length === 0) {
-        return response.status(400).json({
-          message: "Invalid cart",
-          error: true,
-        });
+      if (!cart?.length) {
+        return response
+          .status(400)
+          .json({ message: "Invalid cart", error: true });
       }
 
       const deliveryCharge = address?.DeliveryCharge;
       if (!deliveryCharge) {
-        return response.status(400).json({
-          message: "Missing delivery charge",
-          error: true,
-        });
+        return response
+          .status(400)
+          .json({ message: "Missing delivery charge", error: true });
       }
 
-      let subtotal = 0;
-      let totalDiscount = 0;
+      // Fetch product data
+      const populatedCart = await Promise.all(
+        cart.map(async (item) => {
+          const product = await ProductModel.findById(item.productId);
+          if (!product) throw new Error(`Product not found: ${item.productId}`);
+          return { ...item, product };
+        })
+      );
 
-      const lineItems = cart.map((item) => {
-        const product = item.productId;
+      let subtotal = 0;
+      const lineItems = populatedCart.map((item) => {
+        const { product } = item;
         const discountAmount =
           (product.productPrice * (product.discount || 0)) / 100;
         const priceAfterDiscount = product.productPrice - discountAmount;
 
         subtotal += priceAfterDiscount * item.quantity;
-        totalDiscount += discountAmount * item.quantity;
 
         return {
           price_data: {
@@ -535,9 +538,7 @@ class orderController {
             product_data: {
               name: product.productName,
               images: product.productImageUrls,
-              metadata: {
-                productId: product._id.toString(),
-              },
+              metadata: { productId: product._id.toString() },
             },
             unit_amount: Math.round(priceAfterDiscount * 100),
           },
@@ -545,52 +546,35 @@ class orderController {
         };
       });
 
-      let couponDiscount = 0;
-      let discount = 0;
-      let stripePromotionCodeId = null;
-
+      // Handle coupon
+      let couponDiscount = 0,
+        discount = 0,
+        stripePromotionCodeId = null;
       if (couponCode) {
-        const coupon = await Coupon.findOne({ code: couponCode });
+        const coupon = await CouponModel.findOne({ code: couponCode });
+        if (coupon) {
+          discount = coupon.discount;
+          couponDiscount = (subtotal * discount) / 100;
 
-        if (!coupon) {
-          return response
-            .status(400)
-            .json({ message: "Invalid coupon", error: true });
+          const stripeCoupon = await stripe.coupons.create({
+            percent_off: discount,
+            duration: "once",
+            name: `Code: ${coupon.code}`,
+          });
+
+          const uniqueCode = `${coupon.code}-${Date.now()}`;
+          const stripePromo = await stripe.promotionCodes.create({
+            coupon: stripeCoupon.id,
+            code: uniqueCode,
+          });
+
+          stripePromotionCodeId = stripePromo.id;
         }
-
-        if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
-          return response
-            .status(400)
-            .json({ message: "Coupon usage limit exceeded", error: true });
-        }
-
-        couponDiscount = (subtotal * coupon.discount) / 100;
-        discount = coupon.discount;
-
-        // Create a Stripe coupon
-        const stripeCoupon = await stripe.coupons.create({
-          percent_off: coupon.discount,
-          duration: "once",
-          name: `Code: ${coupon.code}`,
-        });
-
-        const promoCodePayload = {
-          coupon: stripeCoupon.id,
-          code: coupon.code,
-        };
-
-        if (coupon.usageLimit && Number.isInteger(coupon.usageLimit)) {
-          promoCodePayload.max_redemptions = coupon.usageLimit;
-        }
-
-        const stripePromo = await stripe.promotionCodes.create(
-          promoCodePayload
-        );
-        stripePromotionCodeId = stripePromo.id;
       }
 
       const totalAmount = subtotal + deliveryCharge - couponDiscount;
 
+      // Create Stripe session
       const session = await stripe.checkout.sessions.create({
         submit_type: "pay",
         mode: "payment",
@@ -617,7 +601,7 @@ class orderController {
           phone,
           paymentMethod,
           couponCode: couponCode || "",
-          discount: discount || "",
+          discount: discount.toString(),
           couponDiscount: couponDiscount.toFixed(2),
           shippingAddress: JSON.stringify({
             addressLine1: address?.Address,
@@ -639,18 +623,17 @@ class orderController {
 
       return response.status(303).json(session);
     } catch (error) {
-      console.error("Error creating Stripe checkout session:", error);
+      console.error("Stripe checkout error:", error);
       return response.status(500).json({
         message: error.message || "Stripe checkout error",
         error: true,
-        success: false,
       });
     }
   };
 
   static CheckOrderStatus = async (req, res) => {
     const sessionId = req.query.session_id;
-    console.log(sessionId);
+
     try {
       const order = await orderModel.findOne({
         "paymentDetails.sessionId": sessionId,
@@ -665,6 +648,7 @@ class orderController {
         });
       }
     } catch (error) {
+      console.error("CheckOrderStatus error:", error);
       return res.status(500).json({
         success: false,
         message: "Error checking order status",
@@ -676,7 +660,6 @@ class orderController {
   static webhooks = async (request, response) => {
     const sig = request.headers["stripe-signature"];
     const endpointSecret = process.env.STRIPE_ENPOINT_WEBHOOK_SECRET_KEY;
-
     let event;
 
     try {
@@ -687,204 +670,177 @@ class orderController {
     }
 
     try {
-      switch (event.type) {
-        case "checkout.session.completed":
-          const session = event.data.object;
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
 
-          // Fetch the cart items for this user
-          const cartItems = await cartModel
-            .find({ userId: session.metadata.userId })
-            .populate({
-              path: "productId",
-              select:
-                "_id productName productDescription productPrice productImageUrls discount numReviews rating productTotalStockQty SKU",
-              populate: {
-                path: "category",
-                select: "categoryName categoryImage",
-              },
-            });
-
-          const shippingAddress = JSON.parse(session.metadata.shippingAddress);
-
-          // Calculate subtotal and totalDiscount from cart
-          let subtotal = 0;
-          let totalDiscount = 0;
-          cartItems.forEach((item) => {
-            const product = item.productId;
-            const originalPrice = product.productPrice;
-            const discount = product.discount || 0;
-
-            const discountAmount = (originalPrice * discount) / 100;
-            const discountedPrice = originalPrice - discountAmount;
-
-            subtotal += discountedPrice * item.quantity;
-            totalDiscount += discountAmount * item.quantity;
+        const cartItems = await cartModel
+          .find({ userId: session.metadata.userId })
+          .populate({
+            path: "productId",
+            populate: { path: "category" },
           });
 
-          // Map products for orderDetails
-          const product = cartItems.map((item) => ({
+        let subtotal = 0,
+          totalDiscount = 0;
+        cartItems.forEach((item) => {
+          const p = item.productId;
+          const discountAmount = (p.productPrice * (p.discount || 0)) / 100;
+          subtotal += (p.productPrice - discountAmount) * item.quantity;
+          totalDiscount += discountAmount * item.quantity;
+        });
+
+        const shippingAddress = JSON.parse(session.metadata.shippingAddress);
+        const couponDetails = session.metadata.couponCode
+          ? {
+              code: session.metadata.couponCode,
+              discount: Number(session.metadata.discount) || 0,
+              discountAmount: Number(session.metadata.couponDiscount) || 0,
+            }
+          : { code: null, discount: 0, discountAmount: 0 };
+
+        const orderDetails = {
+          productDetails: cartItems.map((item) => ({
             _id: item._id,
             userId: item.userId,
+            quantity: item.quantity,
             productId: {
               _id: item.productId._id,
               productName: item.productId.productName,
               productDescription: item.productId.productDescription,
               SKU: item.productId.SKU,
               productPrice: item.productId.productPrice,
-              productTotalStockQty: item.productId.productTotalStockQty,
               discount: item.productId.discount,
               productImageUrls: item.productId.productImageUrls,
-              category: item.productId.category.categoryName,
+              productTotalStockQty: item.productId.productTotalStockQty,
+              category: item.productId.category?.categoryName,
               rating: item.productId.rating,
               numReviews: item.productId.numReviews,
             },
-            quantity: item.quantity,
-          }));
+          })),
+          UserDetails: {
+            userId: session.metadata.userId,
+            name: session.metadata.fullName,
+            email: session.customer_email,
+            phoneNumber: session.metadata.phone,
+          },
+          paymentDetails: {
+            sessionId: session.id,
+            paymentId: session.payment_intent,
+            payment_method_type: session.metadata.paymentMethod,
+            payment_status: session.payment_status,
+          },
+          shippingAddress,
+          couponDetails,
+          totalAmount: session.amount_total / 100,
+        };
 
-          // Build couponDetails properly
-          const couponDetails = session.metadata.couponCode
-            ? {
-                code: session.metadata.couponCode,
-                discount: Number(session.metadata.discount) || 0, // percent discount from metadata
-                discountAmount: Number(session.metadata.couponDiscount) || 0, // amount discount from metadata
-              }
-            : {
-                code: null,
-                discount: 0,
-                discountAmount: 0,
-              };
+        if (session.payment_status === "paid") {
+          // Save the order
+          const newOrder = await orderModel.create(orderDetails);
 
-          // Build order details with coupon info
-          const orderDetails = {
-            productDetails: product,
-            UserDetails: {
-              userId: session.metadata.userId,
-              name: session.metadata.fullName,
-              email: session.customer_email,
-              phoneNumber: session.metadata.phone,
-            },
-            paymentDetails: {
-              sessionId: session.id,
-              paymentId: session.payment_intent,
-              payment_method_type: session.metadata.paymentMethod,
-              payment_status: session.payment_status,
-            },
-            shippingAddress: shippingAddress,
-            couponDetails,
-            totalAmount: session.amount_total / 100,
-          };
-
-          // If payment successful, save order, update stock, update coupon usage, clear cart, and send emails
-          if (session.payment_status === "paid") {
-            // Save order
-            const order = new orderModel(orderDetails);
-            const saveOrder = await order.save();
-
-            // Update stock quantities for each product
-            for (let item of cartItems) {
-              const productInCart = item.productId;
-              const productInDb = await ProductModel.findById(
-                productInCart._id
+          // Update product stock — single pass
+          for (const item of cartItems) {
+            const productInDb = await ProductModel.findById(item.productId._id);
+            if (
+              productInDb &&
+              productInDb.productTotalStockQty >= item.quantity
+            ) {
+              productInDb.productTotalStockQty -= item.quantity;
+              await productInDb.save();
+            } else {
+              console.warn(
+                `Not enough stock for ${item.productId.productName}`
               );
-
-              if (productInDb) {
-                if (item.quantity <= productInDb.productTotalStockQty) {
-                  productInDb.productTotalStockQty -= item.quantity;
-                  await productInDb.save();
-                } else {
-                  console.log(
-                    `Not enough stock for product ${productInCart.productName}`
-                  );
-                }
-              } else {
-                console.log(
-                  `Product with ID ${productInCart._id} not found in DB.`
-                );
-              }
-            }
-
-            // Update coupon usage count if coupon applied
-            if (couponDetails.code) {
-              await CouponModel.updateOne(
-                { code: couponDetails.code },
-                { $inc: { usedCount: 1 } }
-              );
-            }
-
-            // Format order date for email
-            const orderDate = new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            });
-
-            // Get website info for email templates
-            const siteInfo = await WebsiteInfoModel.findOne();
-            const websiteName = siteInfo?.websiteName;
-            const websiteUrl = process.env.FRONTEND_HOST;
-
-            // Generate email content
-            const { textCustomer, htmlCustomer, textAdmin, htmlAdmin } =
-              generateOrderEmailContent({
-                websiteName,
-                websiteUrl,
-                fullName: session.metadata.fullName,
-                email: session.customer_email,
-                phone: session.metadata.phone,
-                cart: cartItems,
-                address: shippingAddress.addressLine1,
-                city: shippingAddress.city,
-                state: shippingAddress.state,
-                zip: shippingAddress.postalCode,
-                deliveryCharge: shippingAddress.shippingCharge,
-                subtotal,
-                totalDiscount,
-                totalAmount: orderDetails.totalAmount,
-                paymentMethod: session.metadata.paymentMethod,
-                orderIdFormatted: saveOrder?._id,
-                orderDate,
-                couponCode: couponDetails.code || null,
-                couponDiscount: couponDetails.discountAmount || 0,
-              });
-
-            // Send confirmation emails
-            await sendEmail(
-              session.customer_email,
-              "Order Confirmation",
-              textCustomer,
-              htmlCustomer
-            );
-
-            await sendEmail(
-              process.env.EMAIL_FROM,
-              "New Order Received",
-              textAdmin,
-              htmlAdmin
-            );
-
-            // Clear user's cart after order placed
-            if (saveOrder?._id) {
-              await cartModel.deleteMany({ userId: session.metadata.userId });
             }
           }
-          break;
 
-        default:
-          console.log(`Unhandled event type ${event.type}`);
+          // Track coupon usage if coupon applied
+          if (couponDetails.code) {
+            const validCoupon = await CouponModel.findOne({
+              code: couponDetails.code,
+            });
+
+            if (validCoupon) {
+              if (!Array.isArray(validCoupon.usedBy)) {
+                validCoupon.usedBy = [];
+              }
+
+              const userId = session.metadata.userId;
+
+              const existingUsage = validCoupon.usedBy.find(
+                (u) => u.userId.toString() === userId.toString()
+              );
+
+              if (existingUsage) {
+                existingUsage.timesUsed += 1;
+              } else {
+                validCoupon.usedBy.push({ userId, timesUsed: 1 });
+              }
+
+              validCoupon.usedCount = (validCoupon.usedCount || 0) + 1;
+
+              await validCoupon.save();
+            }
+          }
+
+          const siteInfo = await WebsiteInfoModel.findOne();
+          const orderDate = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+
+          const { textCustomer, htmlCustomer, textAdmin, htmlAdmin } =
+            generateOrderEmailContent({
+              websiteName: siteInfo?.websiteName,
+              websiteUrl: process.env.FRONTEND_HOST,
+              fullName: session.metadata.fullName,
+              email: session.customer_email,
+              phone: session.metadata.phone,
+              cart: cartItems,
+              address: shippingAddress.addressLine1,
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              zip: shippingAddress.postalCode,
+              deliveryCharge: shippingAddress.shippingCharge,
+              subtotal,
+              totalDiscount,
+              totalAmount: orderDetails.totalAmount,
+              paymentMethod: session.metadata.paymentMethod,
+              orderIdFormatted: newOrder._id,
+              orderDate,
+              couponCode: couponDetails.code,
+              couponDiscountPercent: couponDetails.discount,
+              couponDiscountAmount: couponDetails.discountAmount,
+            });
+
+          await sendEmail(
+            session.customer_email,
+            "Order Confirmation",
+            textCustomer,
+            htmlCustomer
+          );
+          await sendEmail(
+            process.env.EMAIL_FROM,
+            "New Order Received",
+            textAdmin,
+            htmlAdmin
+          );
+
+          // Clear user's cart after order placed
+          await cartModel.deleteMany({ userId: session.metadata.userId });
+        }
       }
-    } catch (error) {
-      console.error("Error processing webhook:", error);
-      return response.status(500).send({
-        success: false,
-        message: error.message || "Error processing webhook",
-      });
-    }
 
-    // Send success response to Stripe
-    response.status(200).send({
-      success: true,
-      message: "Payment processed successfully",
-    });
+      response
+        .status(200)
+        .send({ success: true, message: "Payment processed successfully" });
+    } catch (error) {
+      console.error("Webhook handler error:", error);
+      return response
+        .status(500)
+        .send({ success: false, message: error.message });
+    }
   };
 
   static orderDataPaypal = async (req, res) => {

@@ -378,7 +378,7 @@ const OrderCom = ({ data }) => {
           </div>
           <Table className="min-w-max ">
             <TableHeader>
-              <TableRow className="uppercase text-sm md:text-base bg-primary hover:bg-hover">
+              <TableRow className="uppercase text-sm md:text-base bg-table hover:bg-hoverTable">
                 <TableHead className="text-white">Order ID</TableHead>
                 <TableHead className="text-white">Product Name(s)</TableHead>
                 <TableHead className="text-white">Total Quantity</TableHead>
@@ -413,7 +413,7 @@ const OrderCom = ({ data }) => {
             </TableHeader>
             <TableBody>
               {currentOrders.map((order) => (
-                <TableRow key={order._id} className=" hover:bg-secondary">
+                <TableRow key={order._id} className="hover:bg-secondaryTable">
                   <TableCell>
                     <Link
                       href={`/admin/order/${order?._id}`}

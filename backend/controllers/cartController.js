@@ -32,30 +32,38 @@ class CartController {
           message: "Product not found",
         });
       }
-      // Check if the requested quantity exceeds the product's available stock
+
       if (product.productTotalStockQty === 0) {
         return res.status(400).json({
           status: "failed",
-          message: `${product.productName} is out of stock.,`,
-        });
-      }
-      // Check if the requested quantity exceeds the product's available stock
-      if (quantity > product.productTotalStockQty) {
-        return res.status(400).json({
-          status: "failed",
-          message: ` only ${product.productTotalStockQty} items are in stock.`,
+          message: `${product.productName} is out of stock.`,
         });
       }
 
       // Check if the product already exists in the user's cart
       let cartItem = await CartModel.findOne({ userId, productId });
 
-      // If it exists, update the quantity
+      //  Calculate total requested quantity
+      const stackedQuantity = cartItem
+        ? cartItem.quantity + quantity
+        : quantity;
+
+      if (stackedQuantity > product.productTotalStockQty) {
+        return res.status(400).json({
+          status: "failed",
+          message: `Only ${
+            product.productTotalStockQty
+          } items are in stock. You already have ${
+            cartItem?.quantity || 0
+          } in your cart.`,
+        });
+      }
+
+      //  Update or create cart item
       if (cartItem) {
         cartItem.quantity += quantity;
         await cartItem.save();
       } else {
-        // If it doesn't exist, create a new cart item
         cartItem = new CartModel({
           userId,
           quantity,
@@ -64,11 +72,13 @@ class CartController {
         await cartItem.save();
       }
 
-      // Fetch the updated cart with populated product and category details
-      const updatedCart = await CartModel.findOne({ userId }).populate({
+      //  Fetch updated cart item with populated product details
+      const updatedCartItem = await CartModel.findOne({
+        _id: cartItem._id,
+      }).populate({
         path: "productId",
         select:
-          "productName productDescription productPrice productImageUrls discount numReviews rating productTotalStockQty SKU ",
+          "productName productDescription productPrice productImageUrls discount numReviews rating productTotalStockQty SKU",
         populate: {
           path: "category",
           select: "categoryName categoryImage",
@@ -78,7 +88,7 @@ class CartController {
       return res.status(200).json({
         status: "success",
         message: "Product added to cart successfully",
-        data: updatedCart,
+        data: updatedCartItem,
       });
     } catch (error) {
       console.error(error);

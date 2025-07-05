@@ -201,7 +201,7 @@ const ProductList = () => {
         <div className="w-[90%] mx-auto flex flex-col justify-center ">
           <Table className="min-w-max " data-aos="fade-right">
             <TableHeader>
-              <TableRow className="uppercase text-sm bg-[#003c7a] hover:bg-[#255394] ">
+              <TableRow className="uppercase text-sm bg-table hover:bg-hoverTable ">
                 <TableHead className="text-white">Image</TableHead>
                 <TableHead className="text-white">Product Name</TableHead>
                 <TableHead className="text-white">SEO Keywords</TableHead>
@@ -216,7 +216,7 @@ const ProductList = () => {
             </TableHeader>
             <TableBody className="capitalize ">
               {currentProducts.map((product) => (
-                <TableRow key={product._id} className=" hover:bg-slate-200">
+                <TableRow key={product._id} className="hover:bg-secondaryTable">
                   <TableCell>
                     <div className="flex gap-1">
                       {product?.productImageUrls?.map((img, index) => (
@@ -249,14 +249,14 @@ const ProductList = () => {
                             slugify(product?.productName, { lower: true })
                           )
                         }
-                        className="bg-blue-500 flex gap-1 items-center text-white px-2 py-1 rounded hover:bg-blue-600"
+                        className="bg-table hover:bg-hoverTable flex gap-1 items-center text-white px-2 py-1 rounded "
                       >
                         <FaEdit />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(product?._id)}
-                        className="bg-red-500 flex items-center gap-1 text-white px-2 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+                        className="bg-red-800 hover:bg-red-900 flex items-center gap-1 text-white px-2 py-1 rounded  disabled:opacity-50"
                         disabled={isDeleting}
                       >
                         <Trash2 style={{ width: "15px", height: "15px" }} />
