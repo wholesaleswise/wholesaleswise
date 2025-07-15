@@ -69,6 +69,15 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        animation: {
+          slideUp: "slideUp 0.4s ease-out",
+        },
+        keyframes: {
+          slideUp: {
+            "0%": { opacity: 0, transform: "translateY(40px)" },
+            "100%": { opacity: 1, transform: "translateY(0)" },
+          },
+        },
       },
     },
   },
