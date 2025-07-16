@@ -1,9 +1,44 @@
-"use client"; 
+// "use client";
 
+// import { useSearchParams, useRouter } from "next/navigation";
+// import { useEffect } from "react";
+
+// const GoogleAuthCallback = () => {
+//   const searchParams = useSearchParams();
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const token = searchParams.get("token");
+//     const role = searchParams.get("role");
+
+//     if (token && role) {
+//       localStorage.setItem("authToken", token);
+//       localStorage.setItem("role", role);
+
+//       if (role === "admin") {
+//         router.push("/admin/dashboard");
+//       } else {
+//         router.push("/");
+//       }
+//     } else {
+//       alert("Authentication failed. Please try again.");
+//     }
+//   }, [searchParams, router]);
+
+//   return <div>Authenticating...</div>;
+// };
+
+// export default GoogleAuthCallback;
+
+export const dynamic = "force-dynamic";
+("use client");
+
+import Loading from "@/components/Loading";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
+import toast from "react-hot-toast";
 
-const GoogleAuthCallback = () => {
+function CallbackInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -21,11 +56,23 @@ const GoogleAuthCallback = () => {
         router.push("/");
       }
     } else {
-      alert("Authentication failed. Please try again.");
+      toast.error("Authentication failed. Please try again.");
     }
   }, [searchParams, router]);
 
   return <div>Authenticating...</div>;
-};
+}
 
-export default GoogleAuthCallback;
+export default function GoogleAuthCallback() {
+  return (
+    <Suspense
+      fallback={
+        <div>
+          <Loading />
+        </div>
+      }
+    >
+      <CallbackInner />
+    </Suspense>
+  );
+}
